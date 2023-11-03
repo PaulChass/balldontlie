@@ -1,0 +1,23 @@
+.p-2{width: 100%;background-color: rgba(
+    68, 25, 0 ,0.2 );}
+.form-group .btn{width:120px}
+#lastNgames{max-width:150px;height:2rem}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}

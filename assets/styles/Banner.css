@@ -1,0 +1,6 @@
+.card{width:100%;}
+.cardLogo{max-height: 160px;width:100%;}
+.mx-auto{opacity:0.8;border-bottom:solid white;margin-bottom:20px;padding-bottom:40px;}
+.carousel-indicators{position:relative;top:10px;}
+ul{list-style: none;}
+.list-group-item{width:100%}

@@ -1,0 +1,10 @@
+#tb1,#tb2{display: block;
+    overflow-x: auto;
+    white-space: nowrap;}
+tr{
+    width:100%;
+    
+}
+.btn .btn-dark{}
+th{vertical-align: middle!important}
+.statButton{font-size: 1em;}

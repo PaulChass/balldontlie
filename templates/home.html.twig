@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+Pronostics NBA - Toutes les infos pour parier sur le basket NBA
+{% endblock %}
+
+{% block body %}
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+              crossorigin="anonymous">
+                      <link rel="stylesheet" href="/build/app.css">
+<div class="container-fluid">
+  <div
+        id="reactApp"
+        data-matchs="{{ matchs|json_encode }}"
+        data-teams="{{ teamsId|json_encode }}"
+    ></div>
+ 
+</div>
+{% endblock %}
