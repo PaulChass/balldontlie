@@ -34,11 +34,11 @@ function Banner(props) {
 				<div id="carouselExampleIndicators" className="carousel slide" data-ride="carousel">
 					<div className="carousel-inner">
             		{ typeof slide1 !== 'undefined'  && (
-						<Slide  games={slide1}  alt='First slide' count={numberOfGames} gameNumber={props.gameNumber} setGameNumber={props.setGameNumber} />)}
+						<Slide  games={slide1}  alt='First slide' count={numberOfGames} gameNumber={props.gameNumber} setGameNumber={props.setGameNumber} setGameId={props.setGameId}/>)}
 					{ typeof slide2 !== 'undefined'&& numberOfGames>5 && (
-						<Slide games={slide2} count={numberOfGames}  alt='Second slide'  gameNumber={props.gameNumber} setGameNumber={props.setGameNumber}/>)}
+						<Slide games={slide2} count={numberOfGames}  alt='Second slide'  gameNumber={props.gameNumber} setGameNumber={props.setGameNumber} setGameId={props.setGameId}/>)}
 						{ typeof slide2 !== 'undefined' && numberOfGames>10 && (
-						<Slide games={slide3} count={numberOfGames}  alt='Third slide'  gameNumber={props.gameNumber} setGameNumber={props.setGameNumber}/>)}
+						<Slide games={slide3} count={numberOfGames}  alt='Third slide'  gameNumber={props.gameNumber} setGameNumber={props.setGameNumber} setGameId={props.setGameId}/>)}
 					</div>	
 				</div>
 			</div>

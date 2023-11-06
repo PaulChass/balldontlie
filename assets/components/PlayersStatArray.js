@@ -11,9 +11,9 @@ function PlayersStats(props) {
 
   useEffect(() => {
     if (typeof (props.teams) !== 'undefined' && props.teams.teams[0] !== 0) {
-      var homeUrl = 'http://balldontlie.fr/index.php/playersStats/' + props.teams.teams[0] +
+      var homeUrl = 'http://192.168.1.20:8000/index.php/playersStats/' + props.teams.teams[0] +
         '/' + props.lastNgames + '/' + props.homeOrAway + '/' + props.winLose + '/' + props.vsMatchup + '/' + props.paceAdjust + '/' + props.seasonType;;
-      var awayUrl = 'http://balldontlie.fr/index.php/playersStats/' + props.teams.teams[1] +
+      var awayUrl = 'http://192.168.1.20:8000/index.php/playersStats/' + props.teams.teams[1] +
         '/' + props.lastNgames + '/' + props.homeOrAway + '/' + props.winLose + '/' + props.vsMatchup + '/' + props.paceAdjust + '/' + props.seasonType;;
 
       const hteamStats = fetch(homeUrl) //1

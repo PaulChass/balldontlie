@@ -10,7 +10,7 @@ function Slide(props) {
                         
                         {typeof props.games !== 'undefined' && props.games.map(({ GameId, HomeLogoUrl, AwayLogoUrl, homeScore, awayScore, Time , id}) => (
                             
-                            <li key={id} className="col-md-2 col-sm-4"><GameButton GameId={GameId} HomeLogoUrl={HomeLogoUrl} AwayLogoUrl={AwayLogoUrl} homeScore={homeScore} awayScore={awayScore} Time={Time} gameNumber={props.gameNumber} setGameNumber = {props.setGameNumber} id={id}/></li>
+                            <li key={id} className="col-md-2 col-sm-4"><GameButton gameId={GameId} HomeLogoUrl={HomeLogoUrl} AwayLogoUrl={AwayLogoUrl} homeScore={homeScore} awayScore={awayScore} Time={Time} gameNumber={props.gameNumber} setGameNumber = {props.setGameNumber} setGameId = {props.setGameId} id={id}/></li>
                         ))}
                     </ul>
                 

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {useEffect } from 'react';
+
 /**function FrenchGameTime(usTime) {
 
 	var time = []
@@ -18,9 +20,17 @@ import React from 'react';
 function GameButton(props) {
 
 	const date = props.Time;
+	useEffect(() => {
+        if(props.gameNumber==0){props.setGameId(props.gameId)}
+      });
+	
+	
+	function changeGame(){
+		props.setGameNumber(props.id);
+		props.setGameId(props.gameId)}
 	
 	return (
-		<button className="card bg-dark" onClick={() => props.setGameNumber(props.id)} >
+		<button className="card bg-dark" onClick={() => changeGame()} >
 			<div className="list-group-item" >
 				<img src={props.HomeLogoUrl} className="cardLogo" />
 				<span>{props.awayScore}</span>

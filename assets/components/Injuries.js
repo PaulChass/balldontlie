@@ -9,8 +9,8 @@ function Injuries({teams, aTeamName, hTeamName}) {
 
   useEffect(() => {
     if(teams[0] !== 0){
-    const hInjuryUrl = "http://balldontlie.fr/index.php/injuries/"+teams.teams[0];
-    const aInjuryUrl = "http://balldontlie.fr/index.php/injuries/"+teams.teams[1];
+    const hInjuryUrl = "http://192.168.1.20:8000/index.php/injuries/"+teams.teams[0];
+    const aInjuryUrl = "http://192.168.1.20:8000/index.php/injuries/"+teams.teams[1];
    
     
     const hinjuries = fetch(hInjuryUrl) //1

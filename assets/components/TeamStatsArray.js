@@ -56,9 +56,9 @@ function TeamsStatsArrays({teams}) {
 
   useEffect(() => {
     if (typeof (teams) !== 'undefined' && teams.teams[0] !== 0) {
-      var homeUrl = 'http://balldontlie.fr/index.php/stats/' + teams.teams[0] +
+      var homeUrl = 'http://192.168.1.20:8000/index.php/stats/' + teams.teams[0] +
         '/' + lastNgames + '/' + homeOrAway + '/' + winLose + '/' + vsMatchup + '/' + paceAdjust + '/' + seasonType;
-      var awayUrl = 'http://balldontlie.fr/index.php/stats/' + teams.teams[1] +
+      var awayUrl = 'http://192.168.1.20:8000/index.php/stats/' + teams.teams[1] +
         '/' + lastNgames + '/' + homeOrAway + '/' + winLose + '/' + vsMatchup + '/' + paceAdjust + '/' + seasonType;
 
       const hteamStats = fetch(homeUrl) //1

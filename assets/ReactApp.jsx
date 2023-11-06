@@ -5,10 +5,19 @@ import Banner from './components/Banner'
 import TeamsStats from './components/TeamsStats'
 import PlayersStats from './components/PlayersStats'
 import Twitter from './components/Twitter'
+import Registration from './components/Registration'
+import SignIn from './components/SignIn'
+
 
 function ReactApp(data) {
 
   const [gameNumber, setGameNumber] = useState(0);
+  const [gameId, setGameId] = useState(0);
+  const [registered, setRegistered] = useState('');
+  const [user, setUser] = useState('');
+
+
+  
 
   var teams=[0,0];
   if(data.data !== undefined && gameNumber !== -1){
@@ -16,9 +25,14 @@ function ReactApp(data) {
   };
   
   return (<div key='banner'>
-  <Banner games={data} gameNumber={gameNumber} setGameNumber={setGameNumber}/>
+  <Banner games={data} gameNumber={gameNumber} setGameNumber={setGameNumber} setGameId={setGameId}/>
   <div style={{display: gameNumber !== -1 ? 'block' : 'none' }}>
+  <Registration teams={teams} gameNumber={gameNumber} gameId={gameId} registered={registered} setRegistered={setRegistered} user={user} setUser={setUser}/>
+   <SignIn teams={teams} gameNumber={gameNumber} gameId={gameId} registered={registered} setRegistered={setRegistered} user={user} setUser={setUser}/>
    <TeamsStats teams={teams} />
+   
+   
+
    <PlayersStats teams={teams}/>
    <Twitter teams={teams}/>
    </div>

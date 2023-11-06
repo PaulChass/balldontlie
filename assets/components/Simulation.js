@@ -17,7 +17,7 @@ function Simulation({aTeamName, hTeamName}) {
         let aName = awayTeam[1];
         if(exceptions.includes(aName)){aName=awayTeam[2]}
 
-        const url = "http://balldontlie.fr/index.php/simulation/"+hName+'/'+aName
+        const url = "http://192.168.1.20:8000/index.php/simulation/"+hName+'/'+aName
 
         const simulate = fetch(url)
 		.then((response) => response.json()) 
