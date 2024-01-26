@@ -21,20 +21,30 @@ class StatsManager
      *     tableau avec stats des équipes à domicile et à l'exterieur ainsi que la date
      *     
      **/
-    public function teamStats($teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType)
+    public function teamStats($teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType, $measureType)
     {
-        $teamsStatsJson = $this->curl('team', $teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType);
-        $teamsStats = json_decode($teamsStatsJson);
-        if ($teamsStats->resultSets[0]->rowSet == []) {
-            $teamsStatsJson = $this->curl('team', $teamId, 0);
-            $teamsStats = json_decode($teamsStatsJson);
-            $teamStats = $this->returnStats($teamId, $teamsStats, null);
-            $teamStats['error'] = "Aucun résultat trouver pour les critères selectionnés";
-            return $teamStats;
+       if($measureType=='Base'){ 
+        $teamsStatsJson = $this->curl('team', $teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType, $measureType);
+        $teamsStats = json_decode($teamsStatsJson);}
+        else{
+            $defStatsJson = $this->curl('team', $teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType, 'Defense');
+            $defStats = json_decode($defStatsJson);
+            $advancedStatsJson = $this->curl('team', $teamId, $lastNgames, $location, $outcome, $opponentTeamId, $paceAdjust, $seasonType, 'Advanced');
+            $advancedStats = json_decode($advancedStatsJson);
         }
-        $teamStats = $this->returnStats($teamId, $teamsStats, null);
 
-        return $teamStats;
+        
+        
+
+        if($measureType=='Base'){
+           $teamStats = $this->returnStats($teamId, $teamsStats, null);
+           return $teamStats;}
+        else{
+            $defteamsStats = $this->returnDefenseStats($teamId,$defStats);
+            $advancedStats = $this->returnAdvancedStats($teamId,$advancedStats);
+            $teamsStats= $defteamsStats+$advancedStats;
+            return $teamsStats;
+        }  
     }
 
     
@@ -68,14 +78,17 @@ class StatsManager
     {
 
         $i = 0;
+        
         $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
         while ($teamStatsId[0][$i][0] != $teamId) {
             $i++;
         }
+
         $stats['Team'] = $teamStatsId[0][$i][1];
         $stats['team_abv'] = $this->getAbvFromId($teamId);
         $stats['team_id'] = $teamStatsId[0][$i][0];
         $stats['points'] = $teamStatsId[0][$i][26];
+        $stats['pointsTaken'] = $teamStatsId[0][$i][26]-$teamStatsId[0][$i][27];
         $stats['minutes'] = $teamStatsId[0][$i][6];
         $stats['pointsRank'] = $teamStatsId[0][$i][52];
         $stats['rebounds'] = $teamStatsId[0][$i][18];
@@ -114,6 +127,49 @@ class StatsManager
 
         return $stats;
     }
+
+
+    public function returnDefenseStats($teamId, $teamsStats){
+        $i = 0;
+        $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
+        while ($teamStatsId[0][$i][0] != $teamId) {
+            $i++;
+        }
+        $stats['Team'] = $teamStatsId[0][$i][1];
+        $stats['team_abv'] = $this->getAbvFromId($teamId);
+        $stats['team_id'] = $teamStatsId[0][$i][0];
+        $stats['def_rating'] = $teamStatsId[0][$i][7];
+        $stats['steals']= $teamStatsId[0][$i][10];
+        $stats['blocks']= $teamStatsId[0][$i][11];
+        $stats['OPP_PTS_OFF_TOV'] = $teamStatsId[0][$i][12];
+        $stats['OPP_PTS_2ND_CHANCE'] = $teamStatsId[0][$i][13];
+        $stats['OPP_PTS_FB'] = $teamStatsId[0][$i][14];
+        $stats['OPP_PTS_PAINT'] = $teamStatsId[0][$i][15];
+
+        return $stats;
+    }
+    
+    public function returnAdvancedStats($teamId, $teamsStats){
+        $i = 0;
+        $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
+        while ($teamStatsId[0][$i][0] != $teamId) {
+            $i++;
+        }
+        $stats['OFF_RATING'] = $teamStatsId[0][$i][8];
+        $stats['DEF_RATING']= $teamStatsId[0][$i][10];
+        $stats['NET_RATING']= $teamStatsId[0][$i][12];
+        $stats['PACE'] = $teamStatsId[0][$i][23];
+        $stats['EFG_PCT'] = $teamStatsId[0][$i][20];
+        $stats['TS_PCT'] = $teamStatsId[0][$i][21];
+        $stats['AST_PCT'] = $teamStatsId[0][$i][13];
+        $stats['AST_TO'] = $teamStatsId[0][$i][14];
+        $stats['OREB_PCT'] = $teamStatsId[0][$i][16];
+        $stats['DREB_PCT'] = $teamStatsId[0][$i][17];
+
+
+        return $stats;
+    }
+
 
     public function getAbvFromId($id)
     {
@@ -171,12 +227,12 @@ class StatsManager
         return array_reverse($players);
     }
     
-    public function curl($teamOrplayer, $teamId, $lastNgames, $location = '', $outcome = '', $opponentTeamId = 0, $paceAdjust = 'N', $seasonType = 'Regular+Season')
+    public function curl($teamOrplayer, $teamId, $lastNgames, $location = '', $outcome = '', $opponentTeamId = 0, $paceAdjust = 'N', $seasonType = 'Regular+Season', $measureType='Base')
     {
 
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://stats.nba.com/stats/leaguedash' . $teamOrplayer . 'stats?College=&Conference=&Country=&DateFrom=&DateTo=&Division=&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=&LastNGames=' . $lastNgames . '&LeagueID=00&Location=' . $location . '&MeasureType=Base&Month=0&OpponentTeamID=' . $opponentTeamId . '&Outcome=' . $outcome . '&PORound=0&PaceAdjust=' . $paceAdjust . '&PerMode=PerGame&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2023-24&SeasonSegment=&SeasonType=' . $seasonType . '&ShotClockRange=&StarterBench=&TeamID=' . $teamId . '&TwoWay=0&VsConference=&VsDivision=&Weight=',
+            CURLOPT_URL => 'https://stats.nba.com/stats/leaguedash' . $teamOrplayer . 'stats?College=&Conference=&Country=&DateFrom=&DateTo=&Division=&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=&LastNGames=' . $lastNgames . '&LeagueID=00&Location=' . $location . '&MeasureType='.$measureType.'&Month=0&OpponentTeamID=' . $opponentTeamId . '&Outcome=' . $outcome . '&PORound=0&PaceAdjust=' . $paceAdjust . '&PerMode=PerGame&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2023-24&SeasonSegment=&SeasonType=' . $seasonType . '&ShotClockRange=&StarterBench=&TeamID=' . $teamId . '&TwoWay=0&VsConference=&VsDivision=&Weight=',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -255,11 +311,11 @@ class StatsManager
                     $graph['stat']='% Tir 3pts';
                     $value[$i]=  $playersGames[$i][17];
                     break;
-                case 'rebounds':
+                case 'rebonds':
                     $graph['stat']='Rebonds par match';
                     $value[$i]=  $playersGames[$i][23];
                     break;
-                case 'assists':
+                case 'passes':
                     $graph['stat']='Passes decisives';
                     $value[$i]=  $playersGames[$i][24];
                     break; 
@@ -267,15 +323,15 @@ class StatsManager
                     $graph['stat']='Pertes de balle';
                     $value[$i]=  $playersGames[$i][27];
                     break;  
-                case 'steals':
+                case 'interceptions':
                     $graph['stat']='Interceptions ';
                     $value[$i]=  $playersGames[$i][25];
                     break; 
-                case 'blocks':
+                case 'contres':
                     $graph['stat']='Contres par match';
                     $value[$i]=  $playersGames[$i][26];
                     break; 
-                case 'plusMinus':
+                case '+/-':
                     $graph['stat']='Plus/minus';
                     $value[$i]=  $playersGames[$i][29];
                     break;  
@@ -375,4 +431,50 @@ class StatsManager
         return $twitter;
     }
 
+    
+    public function checkGameResult($gameId,$game,$homeOrAway)
+    {
+        $names = explode("@", $game); 
+        $teamName = $names[$homeOrAway];
+        $gameId = intval('00'.$gameId);
+        
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'http://stats.nba.com/stats/leaguegamefinder/?gameID='.$gameId.'playerOrTeam=T&leagueId=00&season=2023-24&seasonType=Regular+Season&teamId=&vsTeamId=&playerId=&outcome=&location=&dateFrom=&dateTo=&vsConference=&vsDivision=&conference=&division=&seasonSegment=&poRound=0&starterBench=&gtPts=&gtReb=&gtAst=&gtStl=&gtBlk=&gtOReb=&gtDReb=&gtDD=&gtTD=&gtMinutes=&gtTov=&gtPF=&gtFGM=&gtFGA=&gtFG_Pct=&gtFTM=&gtFTA=&gtFT_Pct=&gtFG3M=&gtFG3A=&gtFG3_Pct=&ltPts=&ltReb=&ltAst=&ltStl=&ltBlk=&ltOReb=&ltDReb=&ltDD=&ltTD=&ltMinutes=&ltTov=&ltPF=&ltFGM=&ltFGA=&ltFG_Pct=&ltFTM=&ltFTA=&ltFT_Pct=&ltFG3M=&ltFG3A=&ltFG3_Pct=&eqPts=&eqReb=&eqAst=&eqStl=&eqBlk=&eqOReb=&eqDReb=&eqDD=&eqTD=&eqMinutes=&eqTov=&eqPF=&eqFGM=&eqFGA=&eqFG_Pct=&eqFTM=&eqFTA=&eqFT_Pct=&eqFG3M=&eqFG3A=&eqFG3_Pct=',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+            'Host:  stats.nba.com',
+            'Connection:  keep-alive',
+            'Accept:  application/json, text/plain, */*',
+            'x-nba-stats-token:  true',
+            'User-Agent:  Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36 Edg/88.0.705.74',
+            'x-nba-stats-origin:  stats',
+            'Origin:  https://www.nba.com',
+            'Sec-Fetch-Site:  same-site',
+            'Sec-Fetch-Mode:  cors',
+            'Sec-Fetch-Dest:  empty',
+            'Referer:  https://www.nba.com/',
+            'Accept-Encoding:  gzip, deflate, br',
+            'Accept-Language:  en-GB,en;q=0.9,en-US;q=0.8',
+        ),
+        ));
+        $response = curl_exec($curl);
+        $obj = json_decode($response);
+        for ($j=0; $j < count($obj->resultSets[0]->rowSet); $j++) { 
+            if($obj->resultSets[0]->rowSet[$j][4]==$gameId ){
+                if($obj->resultSets[0]->rowSet[$j][3]==$teamName){
+                    return 'w';}
+                else {
+                    return 'l';}
+            
+            }
+        }
+        return 'n';
+    }
 }

@@ -15,11 +15,12 @@ function TeamsStatsButtonBar(
 
 
     return(
-    <form>
+    <form onSubmit={(e)=>{e.preventDefault();return false}}>
+      
     <div className="row">
       <div className="p-2 form-group col-md-2 col-4">
           <label style={style} >X derniers:</label><br/>
-          <input className="btn" type="number" id="lastNgames"  value={lastNgames} onChange={(e) => setLastNGames(e.target.value)}/>
+          <input className="btn" type="number" id="lastNgames" onSubmit={(e)=>{e.preventDefault();return false;}} value={lastNgames} onChange={(e) => setLastNGames(e.target.value)}/>
         </div>
       
       <div className="p-2 form-group col-md-2 col-4">

@@ -5,17 +5,19 @@ import CanvasJSReact from './canvasjs.react';
 function StatGraph(props) {
 	
 	const [options,setOptions] = useState(0);
+	const [isLoaded,setIsLoaded] = useState(false);
 	var CanvasJS = CanvasJSReact.CanvasJS;
     var CanvasJSChart = CanvasJSReact.CanvasJSChart;
 	
 	
 	useEffect(() => {
-		var graphUrl = 'http://balldontlie.fr/index.php/graph/' + props.props[1] +'/' + props.props[0] ;
+		
+		var graphUrl = 'https://balldontlie.fr/index.php/graph/' + props.graphParam[1] +'/' + props.graphParam[0] ;
 
 		const graphStats = fetch(graphUrl) //1
 		.then((response) => response.json()) //2
 		.then((graph) => {
-			
+			setIsLoaded(true);
 			return graph
 			
 		});
@@ -39,14 +41,24 @@ function StatGraph(props) {
 			})
 
 			})
-
+			document.getElementById('playerGraph').style.display = "block";			
 		}, [props])
-	
 		
-			
+		function hide()
+		{
+			document.getElementById('playerGraph').style.display = "none";			
+		}
+
+
+		const delay = ms => new Promise(
+			resolve => setTimeout(resolve, ms)
+		  );
 				
 		return (
-			<div> {options !== 0 && 
+			<div id="playerGraph" style={{opacity:"0.8",borderRadius:"1rem"}}> 
+			{isLoaded && <i className="fa fa-window-close" aria-hidden="true" style={{position:"relative",left:"94%",top:"3rem",zIndex:"1",fontSize:"3rem"}} 
+			onClick={()=>hide()}></i>} 
+			{options !== 0 && 
 			<CanvasJSChart options = {options} 
 				/* onRef = {ref => this.chart = ref} */
 			/>}

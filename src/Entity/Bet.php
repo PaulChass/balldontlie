@@ -34,6 +34,21 @@ class Bet
     #[ORM\Column(length: 255)]
     private ?string $amount = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $startTime = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $startDate = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $betType = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $betTypeValue = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $playerId = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -119,6 +134,66 @@ class Bet
     public function setAmount(string $amount): static
     {
         $this->amount = $amount;
+
+        return $this;
+    }
+
+    public function getStartTime(): ?string
+    {
+        return $this->startTime;
+    }
+
+    public function setStartTime(string $startTime): static
+    {
+        $this->startTime = $startTime;
+
+        return $this;
+    }
+
+    public function getStartDate(): ?string
+    {
+        return $this->startDate;
+    }
+
+    public function setStartDate(string $startDate): static
+    {
+        $this->startDate = $startDate;
+
+        return $this;
+    }
+
+    public function getBetType(): ?string
+    {
+        return $this->betType;
+    }
+
+    public function setBetType(?string $betType): static
+    {
+        $this->betType = $betType;
+
+        return $this;
+    }
+
+    public function getBetTypeValue(): ?float
+    {
+        return $this->betTypeValue;
+    }
+
+    public function setBetTypeValue(?float $betTypeValue): static
+    {
+        $this->betTypeValue = $betTypeValue;
+
+        return $this;
+    }
+
+    public function getPlayerId(): ?int
+    {
+        return $this->playerId;
+    }
+
+    public function setPlayerId(?int $playerId): static
+    {
+        $this->playerId = $playerId;
 
         return $this;
     }

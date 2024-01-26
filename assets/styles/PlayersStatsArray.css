@@ -5,6 +5,38 @@ tr{
     width:100%;
     
 }
-.btn .btn-dark{}
+.btn-black{color:white;background-color:rgba(20,20,20,0.1);color:white;position:relative;bottom:3px;}  
+
 th{vertical-align: middle!important}
 .statButton{font-size: 1em;}
+table{border-radius: 1rem;}
+
+
+input[type=number]:focus{
+    background-color: rgba(
+        68, 25, 0 ,0.2 );
+    opacity: 0.7;
+    color:white;
+    text-align:center;
+}
+input[type=text]:focus{
+    background-color: rgba(
+        68, 25, 0 ,0.2 );
+    opacity: 0.7;
+    color:white;
+    text-align:center;
+}
+::placeholder {
+    color: white;
+    opacity: 1; /* Firefox */
+  }
+  
+  ::-ms-input-placeholder { /* Edge 12-18 */
+    color: red;
+  }
+
+.canvasjs-chart-canvas{border-radius: 1rem;}
+
+#playerList{
+    opacity: 0.8;
+}

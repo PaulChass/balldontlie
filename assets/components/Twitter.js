@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {TwitterTimelineEmbed} from 'react-twitter-embed';;
+import {TwitterTimelineEmbed} from 'react-twitter-embed';
 import { useState , useEffect} from 'react';
 
 function Twitter({teams}) {

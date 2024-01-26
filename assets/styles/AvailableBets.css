@@ -1,0 +1,54 @@
+.availableBets {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .availableBet {
+    border: 1px solid #ccc;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #333;
+    color: #fff;
+  }
+  
+  .gameInfo {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .betDetails {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+
+
+
+.betGame{
+  opacity: 0.8;
+  border-bottom: solid whitesmoke;
+}
+
+.betSubmitButton{height:50%;
+  width:90%;
+  margin-top:25%;
+  margin-bottom:25%;
+}
+
+
+.whitetitle{text-align: center;
+color:white;}
+
+.large{font-size:large;}

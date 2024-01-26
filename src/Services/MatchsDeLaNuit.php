@@ -17,10 +17,14 @@ class MatchsDeLaNuit
 **/
     public function MatchsDeLaNuit($day=0)
     {       
-        date_default_timezone_set('America/Los_Angeles'); 
+        date_default_timezone_set('America/New_York'); 
+        
+
         $date=getdate(); 
         $dateVal = date_create("Now");
-       
+        
+        $currentHour = date('H');
+        $currentMinutes = date('i');
       
         $tonightGames=[];
         
@@ -42,46 +46,63 @@ class MatchsDeLaNuit
                     $found = true;
                     for ($j=0; $j < count($gameDates[$i]->games); $j++) { 
                         $games = $gameDates[$i]->games;
-                        $match['GameId']=$games[$j]->gameId;
                         
                         $gamedate=$games[$j]->gameDateTimeUTC;
+
+                            $hourUTC = substr($gamedate, 11, 2); // time UTC
+                            $hourFR= $hourUTC+1; 
+                            if($hourFR==24){
+                                $hourFR='00';
+                            }
+                            if($hourFR==25){
+                                $hourFR='1';
+                            }
+                            $minutes = substr($gamedate, 14, 2);
+                            $time = $hourFR.':'.$minutes;
+
+                            $match['GameId']=$games[$j]->gameId;
+                            $match['HomeTeamId']= $games[$j]->homeTeam->teamId;
+                            $match['HomeLogoUrl']= 'https://cdn.nba.com/logos/nba/'.$games[$j]->homeTeam->teamId.'/global/L/logo.svg';
+                                
+                            $match['AwayTeamId']= $games[$j]->awayTeam->teamId;
+                                $match['AwayLogoUrl']= 'https://cdn.nba.com/logos/nba/'.$games[$j]->awayTeam->teamId.'/global/L/logo.svg';
+                                $match['status']= $games[$j]->gameStatus;
+                                $match['statusText']= $games[$j]->gameStatusText;
+                                if($match['status']==1){
+                                    if (str_contains($match['statusText'], 'pm')) { 
+                                        $pieces = explode("pm", $match['statusText']);
+                                        $hourMinutes = explode(":", $pieces[0]);
+                                        $hour = intval($hourMinutes[0])+12+6;
+                                        if($hour >= 24 ){$hour = $hour-24;}                                        
+                                        $minutes = $hourMinutes[1];
+                                        $match['startTime']=[$hour,$minutes];}
+                                    } elseif (str_contains($match['statusText'], 'am')) {
+                                        $pieces = explode("pm", $match['statusText']);
+                                        $hourMinutes = explode(":", $pieces[0]);
+                                        $hour = intval($hourMinutes[0])+6;
+                                        $minutes = $hourMinutes[1];  
+                                        $match['startTime']=[$hour,$minutes];                                 
+                                    }   
+                                        
+                                $gameDateUTC = explode('T',$games[$j]->gameDateUTC);
+                                $match['day']=$gameDateUTC[0];
+
+                                $match['homeScore']= $games[$j]->homeTeam->score;
+                                $match['awayScore']= $games[$j]->awayTeam->score;
+                                $match['id']=null;
+                                date_default_timezone_set('Europe/London'); 
+                                $match['Time']= $time;
+
+                                array_push($tonightGames,$match);
+
                         
-                        $hourUTC = substr($gamedate, 11, 2); // time UTC
-                        $hourFR= $hourUTC+2; 
-                        if($hourFR==24){
-                            $hourFR='00';
-                        }
-                        if($hourFR==25){
-                            $hourFR='1';
-                        }
-                        $minutes = substr($gamedate, 14, 2);
-                        $time = $hourFR.':'.$minutes;
-
-                        $match['HomeTeamId']= $games[$j]->homeTeam->teamId;
-                        $match['HomeLogoUrl']= 'https://cdn.nba.com/logos/nba/'.$games[$j]->homeTeam->teamId.'/global/L/logo.svg';
-                            
-                        $match['AwayTeamId']= $games[$j]->awayTeam->teamId;
-                            $match['AwayLogoUrl']= 'https://cdn.nba.com/logos/nba/'.$games[$j]->awayTeam->teamId.'/global/L/logo.svg';
-        
-                            $match['period']= null;
-                            $match['timeRemaining']= null;
-                            $match['homeScore']= null;
-                            $match['awayScore']= null;
-                            $match['id']=null;
-                            $match['day']=$date;
-                            date_default_timezone_set('Europe/London'); 
-                            $match['Time']= $time;
-
-                            array_push($tonightGames,$match);
-
-                        }
+                    }
                         date_default_timezone_set('America/Los_Angeles');
                 }
                         //$match['Time']=date('H:i', mktime(date('H', strtotime($gamedate)),date('i', strtotime($gamedate))));
               
             }
             date_add($dateVal, date_interval_create_from_date_string("1 days"));        }
-        
         return $tonightGames;
     }
 
