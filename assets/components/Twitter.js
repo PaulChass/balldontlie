@@ -4,9 +4,9 @@ import {TwitterTimelineEmbed} from 'react-twitter-embed';
 import { useState , useEffect} from 'react';
 
 function Twitter({teams}) {
-    
-            
-                return ( <div className="row justify-content-around mt-4">
+
+
+                return ( <div className="row justify-content-around mt-4" id="twitter1">
                 <div className="col-lg-4 col-10" style={{ opacity:0.7 }}> 
                 {teams[0] == '1610612737' && <TwitterTimelineEmbed sourceType="profile" screenName='ATLHawks' options={{height: 800}} theme="dark" />}
                 {teams[0] == '1610612738' && <TwitterTimelineEmbed sourceType="profile" screenName='celtics' options={{height: 800}} theme="dark" />}
@@ -41,7 +41,7 @@ function Twitter({teams}) {
 
             </div>
             <div className="col-lg-4 col-10" style={{ opacity:0.7 }}> 
-            {teams[1] == '1610612737' && <TwitterTimelineEmbed sourceType="profile" screenName='ATLHawks' options={{height: 800}} theme="dark" />}
+                {teams[1] == '1610612737' && <TwitterTimelineEmbed sourceType="profile" screenName='ATLHawks' options={{height: 800}} theme="dark" />}
                 {teams[1] == '1610612738' && <TwitterTimelineEmbed sourceType="profile" screenName='celtics' options={{height: 800}} theme="dark" />}
                 {teams[1] == '1610612751' && <TwitterTimelineEmbed sourceType="profile" screenName='BrooklynNets' options={{height: 800}} theme="dark" />}
                 {teams[1] == '1610612766' && <TwitterTimelineEmbed sourceType="profile" screenName='hornets' options={{height: 800}} theme="dark" />}

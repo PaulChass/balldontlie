@@ -236,7 +236,7 @@ class StatsManager
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_TIMEOUT => 10000,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
@@ -274,7 +274,7 @@ class StatsManager
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
+        CURLOPT_TIMEOUT => 8000,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'GET',
@@ -476,5 +476,70 @@ class StatsManager
             }
         }
         return 'n';
+    }
+
+
+
+
+    public function lastNightResults(){
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'http://stats.nba.com/stats/leaguegamefinder/?playerOrTeam=T&leagueId=00&season=2023-24&seasonType=Regular+Season&teamId=&vsTeamId=&playerId=&outcome=&location=&dateFrom=&dateTo=&vsConference=&vsDivision=&conference=&division=&seasonSegment=&poRound=0&starterBench=&gtPts=&gtReb=&gtAst=&gtStl=&gtBlk=&gtOReb=&gtDReb=&gtDD=&gtTD=&gtMinutes=&gtTov=&gtPF=&gtFGM=&gtFGA=&gtFG_Pct=&gtFTM=&gtFTA=&gtFT_Pct=&gtFG3M=&gtFG3A=&gtFG3_Pct=&ltPts=&ltReb=&ltAst=&ltStl=&ltBlk=&ltOReb=&ltDReb=&ltDD=&ltTD=&ltMinutes=&ltTov=&ltPF=&ltFGM=&ltFGA=&ltFG_Pct=&ltFTM=&ltFTA=&ltFT_Pct=&ltFG3M=&ltFG3A=&ltFG3_Pct=&eqPts=&eqReb=&eqAst=&eqStl=&eqBlk=&eqOReb=&eqDReb=&eqDD=&eqTD=&eqMinutes=&eqTov=&eqPF=&eqFGM=&eqFGA=&eqFG_Pct=&eqFTM=&eqFTA=&eqFT_Pct=&eqFG3M=&eqFG3A=&eqFG3_Pct=',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'Host:  stats.nba.com',
+                'Connection:  keep-alive',
+                'Accept:  application/json, text/plain, */*',
+                'x-nba-stats-token:  true',
+                'User-Agent:  Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36 Edg/88.0.705.74',
+                'x-nba-stats-origin:  stats',
+                'Origin:  https://www.nba.com',
+                'Sec-Fetch-Site:  same-site',
+                'Sec-Fetch-Mode:  cors',
+                'Sec-Fetch-Dest:  empty',
+                'Referer:  https://www.nba.com/',
+                'Accept-Encoding:  gzip, deflate, br',
+                'Accept-Language:  en-GB,en;q=0.9,en-US;q=0.8',
+            ),
+        )
+        );
+        $response = curl_exec($curl);
+        $teamsGames = json_decode($response);
+        $sameDay = true;
+        $iterator = 0;
+        $games = [];
+        $game = [];
+        while ($sameDay) {
+            $game['matchup'] = $teamsGames->resultSets[0]->rowSet[$iterator][6];
+            $game['homeScore'] = $teamsGames->resultSets[0]->rowSet[$iterator][9];
+          //  $game['homeName'] = $teamsGames->resultSets[0]->rowSet[$iterator][4];
+            $game['awayScore'] = $teamsGames->resultSets[0]->rowSet[$iterator][9] - $teamsGames->resultSets[0]->rowSet[$iterator][27];
+            $game['gameId'] = $teamsGames->resultSets[0]->rowSet[$iterator][4];
+            if(str_contains($teamsGames->resultSets[0]->rowSet[$iterator][6],'@')){
+                $i =0 ;
+                $gameNotFound = true; 
+                while($gameNotFound){
+                    if($teamsGames->resultSets[0]->rowSet[$i][4] == $game['gameId'] && $i !== $iterator){
+                        $gameNotFound = false;
+                    } else { 
+                        $i++;
+                    }
+                }
+                $game['awayScore'] = $teamsGames->resultSets[0]->rowSet[$i][9];
+                array_push($games,$game);}
+            if($teamsGames->resultSets[0]->rowSet[$iterator][5] !== $teamsGames->resultSets[0]->rowSet[$iterator+1][5])
+            {
+                $sameDay = false;
+            }
+            $iterator++;
+        }
+      
+        return $games;
     }
 }

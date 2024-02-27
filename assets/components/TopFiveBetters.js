@@ -13,11 +13,11 @@ function TopFiveBetters()
   }, []);
 
   return (
-    <div className="betters text-white text-center w-100">
-      <h3 className="m-3 text-center col-6 mr-auto ml-auto">
+    <div className="betters text-white text-center w-100 mx-auto">
+      <h3 className="m-3 text-center col-8 mr-auto ml-auto">
         Top parieurs
         </h3>
-        <p className="bg-dark p-5 m-4 col-6 mr-auto ml-auto" style={{ borderRadius: "1rem", opacity: 0.8, fontSize: "1.1rem" }}>
+        <p className="col-8 m-auto" style={{ borderRadius: "1rem", opacity: 0.8, fontWeight: "bold" }}>
 
         { typeof(betters[0])!=='undefined' && betters.slice(0,5).map((better) =>
         <div className="better row justify-content-between">

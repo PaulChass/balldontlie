@@ -4,22 +4,31 @@ import CommentForm from './CommentForm';
 const Comments = (props) => {
   const [comments, setComments] = useState([]);
   const [value, setValue] = useState(props.gameId);
+  const [randomId,setRandomId] = useState(Math.floor(Math.random() * 100) + 1);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
+    let url = '/index.php/comments/'+props.gameId;
+    fetch(url) // Replace with the correct API endpoint URL
+      .then((response) => response.json())
+      .then((data) => setComments(data))
+      .then(()=>setIsLoading(false))
+      .catch((error) => console.error("Error fetching data:", error));
     const intervalId = setInterval(() => {
         let url = '/index.php/comments/'+props.gameId;
     fetch(url) // Replace with the correct API endpoint URL
       .then((response) => response.json())
       .then((data) => setComments(data))
+      .then(()=>setIsLoading(false))
       .catch((error) => console.error("Error fetching data:", error));
     }, 3000);
-
     // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
   }, [props.gameId]);
 
   
-  
+  console.log(isLoading);
 
 
 
@@ -27,7 +36,7 @@ const Comments = (props) => {
     // Implement logic to submit the comment, e.g., send it to a server
     // For now, just update the local state
     
-    if (props.registered == "Registration successful") {
+
         fetch("index.php/comment", {
         method: "POST",
         headers: {
@@ -36,7 +45,8 @@ const Comments = (props) => {
         body: JSON.stringify({
           user: props.user,
           gameId: props.gameId,
-          message: comment
+          message: comment,
+          randomId : randomId
         }),
     })
     .then((response) => {
@@ -53,22 +63,24 @@ const Comments = (props) => {
     .catch((error) => {
       // Handle network or other errors
     });
-    } else {
-    alert("Vous devez être connecté pour laisser un commentaire");
-    }
+    
   };
 
   
 
   return (
-    <div className=" text-white text-center col-10 mx-auto" style={{ borderRadius: "1rem", opacity: 0.8, fontSize: "1.1rem" }}>
+    <div className=" text-white text-center col-10 mx-auto" style={{ opacity: 0.8, fontSize: "1.1rem" }}>
     
       {/* Display existing comments */}
       <h2>Commentaires sur ce match</h2>
-      {comments.length == 0 && <p className="info">Pas d'avis d'utilisateurs dispos sur ce match</p>}
+      {isLoading && <i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i>}
+      {isLoading == false  && comments.length == 0 && <p className="info">Pas d'avis d'utilisateurs dispos sur ce match</p>}
       <ul>
-        {comments.length !== 0 && comments.map((comment, index) => (
-          <li key={index} className='bg-dark p-2 m-2 text-left' style={{ borderRadius: "1rem"}}><strong>{comment.user} : </strong>{comment.content}</li>
+        {comments.length !== 0 && isLoading==false && comments.map((comment, index) => (
+          <li key={index} className='bg-dark p-3 m-2 text-left' style={{ borderRadius: "1rem"}}><strong>
+            { comment.user }
+            </strong>: {comment.content}
+            </li>
         ))}
       </ul>
 

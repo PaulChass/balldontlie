@@ -6,6 +6,7 @@ import Injuries from "./Injuries";
 import Simulation from "./Simulation";
 import PlayersStats from "./PlayersStats";
 
+
 function TeamsStatsArrays(props) {
   const [lastNgames, setLastNGames] = useState("0");
   const [homeOrAway, setHomeOrAway] = useState("all");
@@ -84,6 +85,9 @@ function TeamsStatsArrays(props) {
   const [aOREB_PCT, setAOREB_PCT] = useState("");
   const [aDREB_PCT, setADREB_PCT] = useState("");
 
+  const [simulationIsLoading, setSimulationIsLoading] = useState(true);
+  const [homeIsLoading, setHomeIsLoading] = useState(true);
+  const [awayIsLoading, setAwayIsLoading] = useState(true);
 
 
   const [subMenuItem, setSubMenuItem] = useState(0);
@@ -141,9 +145,11 @@ function TeamsStatsArrays(props) {
       if (home == 0) {
         let o = parseInt(d.data.hOdds * 100) / 100;
         setOdd(o);
+        setSimulationIsLoading(false);
       } else {
         let o = parseInt(d.data.aOdds * 100) / 100;
         setOdd(o);
+        setSimulationIsLoading(false);
       }
     });
   }, [homeTeam, awayTeam, home]);
@@ -185,7 +191,7 @@ function TeamsStatsArrays(props) {
     }
   }
 
-  function showBets(game) {
+  /***function showBets(game) {
     ///All bets but user bets for this game
     useEffect(() => {
       let url = "/index.php/fetch-bets/" + game;
@@ -331,17 +337,11 @@ function TeamsStatsArrays(props) {
       );
     }
     //  else {return(<div> Aucun pari dispo pour ce match</div>)}
-  }
+  }***/
 
-  function getBalance(user) {
-    let url = "/index.php/balance/" + user;
-    fetch(url) // Replace with the correct API endpoint URL
-      .then((response) => response.json())
-      .then((data) => props.setBalance(data))
-      .catch((error) => console.error("Error fetching data:", error));
-  }
-
-  function acceptBet(id, startTime, startDate, type, typeValue) {
+  
+    /**
+    function acceptBet(id, startTime, startDate, type, typeValue) {
     if (props.registered == "Registration successful") {
       // Send the registration data to your Symfony backend API
       fetch("index.php/acceptBet", {
@@ -414,8 +414,19 @@ function TeamsStatsArrays(props) {
     }
   }
 
-  setInterval(timeToBet, 1000);
+    setInterval(timeToBet, 1000);
 
+  **/
+
+    function getBalance(user) {
+      let url = "/index.php/balance/" + user;
+      fetch(url) // Replace with the correct API endpoint URL
+        .then((response) => response.json())
+        .then((data) => props.setBalance(data))
+        .catch((error) => console.error("Error fetching data:", error));
+    }
+
+    
   useEffect(() => {
     if (typeof props.teams !== "undefined" && props.teams[0] !== 0) {
       var homeUrl =
@@ -452,16 +463,18 @@ function TeamsStatsArrays(props) {
         seasonType +
         "/" +
         measureType;
-
+      setHomeIsLoading(true);
       const hteamStats = fetch(homeUrl) //1
         .then((response) => response.json()) //2
         .then((team) => {
+          setHomeIsLoading(false);
           return team; //3
         });
-
+        setAwayIsLoading(true);
       const ateamStats = fetch(awayUrl) //1
         .then((response) => response.json()) //2
         .then((team) => {
+          setAwayIsLoading(false);
           return team; //3
         });
 
@@ -758,10 +771,10 @@ function TeamsStatsArrays(props) {
                   Stats des équipes{" "}
                 </th>
                 <th id="homeLogo" scope="col">
-                  {homeLogo}
+                  {homeIsLoading ?<i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i> : homeLogo}
                 </th>
                 <th id="awayLogo" scope="col">
-                  {awayLogo}
+                {awayIsLoading ?<i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i> : awayLogo}
                 </th>
               </tr>
             </thead>
@@ -909,10 +922,10 @@ function TeamsStatsArrays(props) {
                   {" "}
                 </th>
                 <th id="homeLogo" scope="col">
-                  {homeLogo}
+                  {homeIsLoading ?<i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i> : homeLogo}
                 </th>
                 <th id="awayLogo" scope="col">
-                  {awayLogo}
+                {awayIsLoading ?<i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i> : awayLogo}
                 </th>
               </tr>
             </thead>
@@ -1111,9 +1124,6 @@ function TeamsStatsArrays(props) {
           subMenuItem={subMenuItem}
         />
       )}
-      <div style={{ display: subMenuItem == 1 ? "block" : "none" }}>
-        {showBets(gameId)}
-      </div>
     </div>
   );
 }

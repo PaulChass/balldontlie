@@ -17,9 +17,9 @@ const CommentForm = ({ onCommentSubmit }) => {
 
   return (
     <div>
-      <h3>Et toi t'en penses quoi?</h3>
+      <h3 classsName="p-3">Et toi t'en penses quoi?</h3>
       <form onSubmit={handleSubmit}>
-        <textarea
+        <textarea className='form-control form-control col-9 m-auto mt-4'
           rows="4"
           cols="50"
           placeholder="Ton commentaire...."
@@ -27,7 +27,7 @@ const CommentForm = ({ onCommentSubmit }) => {
           onChange={handleCommentChange}
         ></textarea>
         <br />
-        <button type="submit">Envoyer le commentaire</button>
+        <button className="btn btn-primary" type="submit">Envoyer le commentaire</button>
       </form>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../styles/AvailableBets.css";
 import TopFiveBetters from './TopFiveBetters'
+import LastNightGames from './LastNightGames'
 
 
 function AvailableBets(props) {
@@ -160,14 +161,12 @@ function AvailableBets(props) {
   }
 
   return (
-    <div className="availableBets  mx-auto col-md-10">
+    <div className="availableBets   col-md-10 m-auto">
       <span>{props.user !== "" && getBalance(props.user)}</span>
       {props.registered !== "Registration successful" && (
-      <div className="text-white text-center w-100">
-      <h2 className="m-3 text-center">Bienvenue sur balldontlie</h2>
-      <h3 className="m-3 text-center">
-        Le repère des parieurs NBA !
-      </h3>
+      <div className="text-white text-center w-100 mx-auto">
+      <h2 className="m-3 text-center">Le site des parieurs NBA</h2>
+      
       <p className="bg-dark p-5" style={{ borderRadius: "1rem", opacity: 0.8, fontSize: "1.1rem" }}>
         Retrouve toutes les infos pour parier sur les matchs de la nuit  et joue contre les autre membres de la commu 🏀.
         <br /><br />
@@ -181,8 +180,8 @@ function AvailableBets(props) {
         <br /><br />
         Prêt à plonger dans l'action? 
         <span> Clique sur un match de la nuit et </span>
-        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(5); return false; }}>inscris-toi</a>
-        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(6); return false; }}>Connecte-toi</a>
+        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(5); return false; }}>inscris-toi</a>&nbsp;ou&nbsp;
+        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(6); return false; }}>connecte-toi</a>
         <span> </span> pour affronter les autres pronostiqueurs!
       </p>
     </div>
@@ -190,8 +189,7 @@ function AvailableBets(props) {
       )}
     
     <TopFiveBetters />
-
-      
+    <LastNightGames />
     </div>
   );
 }

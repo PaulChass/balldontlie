@@ -37,7 +37,7 @@ function Banner(props) {
         className="carousel slide d-flex align-items-center"
         data-ride="carousel"
       >
-		 {typeof slide2 !== "undefined" && numberOfGames > 5 && <span class="carousel-control-prev-icon" aria-hidden="true" type="button"
+		 {typeof slide2 !== "undefined" && numberOfGames > 5 && <span clasName="carousel-control-prev-icon" aria-hidden="true" type="button"
         data-target="#carouselExampleIndicators"
         data-slide="prev"></span>}
      
@@ -106,7 +106,7 @@ function Banner(props) {
 		 
         </div>
 		{typeof slide2 !== "undefined" && numberOfGames > 5  &&
-		<span class="carousel-control-next-icon" aria-hidden="true" type="button"
+		<span className="carousel-control-next-icon" aria-hidden="true" type="button"
         data-target="#carouselExampleIndicators"
         data-slide="next"></span>} 	
 

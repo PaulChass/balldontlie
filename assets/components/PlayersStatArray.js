@@ -18,6 +18,9 @@ function PlayersStats(props) {
   const [searchResults, setSearchResults] = useState([]);
   const [showStat, setShowStat] = useState("points");
   const [player, setPlayer] = useState("");
+  const [homeIsLoading, setHomeIsLoading] = useState(true);
+  const [awayIsLoading, setAwayIsLoading] = useState(true);
+
 
   useEffect(() => {
     if (typeof props.teams !== "undefined" && props.teams[0] !== 0) {
@@ -51,16 +54,19 @@ function PlayersStats(props) {
         props.paceAdjust +
         "/" +
         props.seasonType;
-
+      setHomeIsLoading(true);
       const hteamStats = fetch(homeUrl) //1
         .then((response) => response.json()) //2
         .then((team) => {
+          setHomeIsLoading(false);
           return team; //3
         });
 
+      setAwayIsLoading(true);
       const ateamStats = fetch(awayUrl) //1
         .then((response) => response.json()) //2
         .then((team) => {
+          setAwayIsLoading(false);
           return team; //3
         })
       const getTeamsStats = () => {
@@ -216,214 +222,225 @@ function PlayersStats(props) {
       "https://cdn.nba.com/logos/nba/" +
       PlayersStats[0].teamId +
       "/global/L/logo.svg";
-    return (
-      <table
-        id="tb1"
-        className="col-md-10 m-auto table table-hover table-dark "
-      >
-        <thead>
-          <tr>
-            <th scope="col">
-              <img style={{ maxHeight: "80px" }} src={logoUrl} />
-            </th>
-            <th scope="col"> </th>
-            <th scope="col" onClick={() => sort("games")}>
-              {" "}
-              Matchs <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("minutes")}>
-              {" "}
-              Minutes <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("points")}>
-              Points <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("rebounds")}>
-              Rebonds <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("assists")}>
-              {" "}
-              Passes <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("blocks")}>
-              {" "}
-              Contres <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("steals")}>
-              {" "}
-              Inters <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("three_fg_pct")}>
-              {" "}
-              %3 Pts <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("fg_pct")}>
-              {" "}
-              %Tir <i className="fa fa-solid fa-sort text-white" />
-            </th>
-            <th scope="col" onClick={() => sort("plusminus")}>
-              {" "}
-              +/- <i className="fa fa-solid fa-sort text-white" />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {PlayersStats[0] !== undefined
-            ? PlayersStats.slice(0, 10).map((player) => (
-                <tr key={player.id}>
-                  <td>
-                    <img
-                      style={{ maxHeight: "50px" }}
-                      src={
-                        "https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/1040x760/" +
-                        player.id +
-                        ".png"
-                      }
-                    ></img>
-                  </td>
-                  <td className="align-middle text-center"> {player.name}</td>
-                  <td className="align-middle text-center">{player.games} </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "minutes",
-                          player.minutes
-                        )
-                      }
-                    >
-                      {player.minutes}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "points",
-                          player.points
-                        )
-                      }
-                    >
-                      {player.points}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "rebonds",
-                          player.rebounds
-                        )
-                      }
-                    >
-                      {player.rebounds}{" "}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "passes",
-                          player.assists
-                        )
-                      }
-                    >
-                      {player.assists}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "contres",
-                          player.blocks
-                        )
-                      }
-                    >
-                      {player.blocks}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "interceptions",
-                          player.steals
-                        )
-                      }
-                    >
-                      {player.steals}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "3pt_pct",
-                          player.three_fg_pct
-                        )
-                      }
-                    >
-                      {player.three_fg_pct}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "fg_pct",
-                          player.fg_pct
-                        )
-                      }
-                    >
-                      {player.fg_pct}
-                    </button>
-                  </td>
-                  <td className="align-middle text-center">
-                    <button
-                      className="btn btn-black statButton"
-                      onClick={() =>
-                        getGraph(
-                          player.id,
-                          player.name,
-                          "+/-",
-                          player.plusminus
-                        )
-                      }
-                    >
-                      {player.plusminus}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            : null}
-        </tbody>
-      </table>
-    );
+    if(homeIsLoading==false){
+      return (
+        <table
+          id="tb1"
+          className="col-md-10 m-auto table table-hover table-dark "
+        >
+          <thead>
+            <tr>
+              <th scope="col">
+                <img style={{ maxHeight: "80px" }} src={logoUrl} />
+              </th>
+              <th scope="col"> </th>
+              <th scope="col" onClick={() => sort("games")}>
+                {" "}
+                Matchs <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("minutes")}>
+                {" "}
+                Minutes <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("points")}>
+                Points <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("rebounds")}>
+                Rebonds <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("assists")}>
+                {" "}
+                Passes <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("blocks")}>
+                {" "}
+                Contres <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("steals")}>
+                {" "}
+                Inters <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("three_fg_pct")}>
+                {" "}
+                %3 Pts <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("fg_pct")}>
+                {" "}
+                %Tir <i className="fa fa-solid fa-sort text-white" />
+              </th>
+              <th scope="col" onClick={() => sort("plusminus")}>
+                {" "}
+                +/- <i className="fa fa-solid fa-sort text-white" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {PlayersStats[0] !== undefined
+              ? PlayersStats.slice(0, 10).map((player) => (
+                  <tr key={player.id}>
+                    <td>
+                      <img
+                        style={{ maxHeight: "50px" }}
+                        src={
+                          "https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/1040x760/" +
+                          player.id +
+                          ".png"
+                        }
+                      ></img>
+                    </td>
+                    <td className="align-middle text-center"> {player.name}</td>
+                    <td className="align-middle text-center">{player.games} </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "minutes",
+                            player.minutes
+                          )
+                        }
+                      >
+                        {player.minutes}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "points",
+                            player.points
+                          )
+                        }
+                      >
+                        {player.points}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "rebonds",
+                            player.rebounds
+                          )
+                        }
+                      >
+                        {player.rebounds}{" "}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "passes",
+                            player.assists
+                          )
+                        }
+                      >
+                        {player.assists}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "contres",
+                            player.blocks
+                          )
+                        }
+                      >
+                        {player.blocks}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "interceptions",
+                            player.steals
+                          )
+                        }
+                      >
+                        {player.steals}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "3pt_pct",
+                            player.three_fg_pct
+                          )
+                        }
+                      >
+                        {player.three_fg_pct}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "fg_pct",
+                            player.fg_pct
+                          )
+                        }
+                      >
+                        {player.fg_pct}
+                      </button>
+                    </td>
+                    <td className="align-middle text-center">
+                      <button
+                        className="btn btn-black statButton"
+                        onClick={() =>
+                          getGraph(
+                            player.id,
+                            player.name,
+                            "+/-",
+                            player.plusminus
+                          )
+                        }
+                      >
+                        {player.plusminus}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              : null}
+          </tbody>
+        </table>
+      ); }
+    else
+    {
+      return (
+        <table
+          id="tbloading"
+          className="col-md-10 m-auto table table-hover table-dark p-3 d-flex justify-content-center"
+        >< i class="text-white fa fa-spinner fa-spin" style={{fontSize:"2rem"}}></i> 
+        </table>
+      )
+    }
   }
   return (
     <div className="playersStats" style={{ margin: "auto" }}>

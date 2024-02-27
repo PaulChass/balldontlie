@@ -73,9 +73,11 @@ class MainController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $comment = new Comment();
-        $comment->setUsername($data['user']);
+        if($data['user']==''){$comment->setUsername('anon'.$data['randomId']);}else{
+        $comment->setUsername($data['user']);}
         $comment->setGameId($data['gameId']);
         $comment->setMessage($data['message']);
+        
         $entityManager->persist($comment);
         $entityManager->flush();
 
@@ -462,6 +464,19 @@ class MainController extends AbstractController
         $response->headers->set('Access-Control-Allow-Origin', '*');
         return $response;
     }
+
+
+    /**
+     * @Route("/lastnightgames", name="lastnightgames")
+     */
+    public function lastNightGames(StatsManager $StatsManager )
+    {
+        $games = $StatsManager->lastNightResults();
+        $response = new JsonResponse(['data' => $games]);
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        return $response;
+    }
+
 
     /**
      * @Route("/check", name="check")
