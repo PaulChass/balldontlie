@@ -38,8 +38,7 @@ class MatchsDeLaNuit
         while($found==false){
         $dateET = date_format($dateVal, "m/d/Y");
         //only for offseason 
-        //$dateET = '12/25/2022';
-
+        $dateET = '06/17/2024';
         for ($i=0; $i < count($gameDates); $i++) { 
                 $gameDateTime = preg_split('/ +/', $gameDates[$i]->gameDate );  
                 if($gameDateTime[0]==$dateET){

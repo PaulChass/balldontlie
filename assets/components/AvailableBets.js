@@ -18,7 +18,7 @@ function AvailableBets(props) {
       .catch((error) => console.error("Error fetching data:", error));
   }, [props, itb, betsType]);
   var date = new Date();
- 
+
 
 
   function getBalance(user) {
@@ -113,41 +113,39 @@ function AvailableBets(props) {
   setInterval(timeToBet, 1000);
 
   var today = new Date();
-  var dateFR = new Date(today.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
-  
+  var dateFR = new Date(today.toLocaleString("en-US", { timeZone: "Europe/Paris" }));
 
-  
+
+
   for (let i = 0; i < bets.length; i++) {
     if (bets[i] !== undefined) {
       var startDates = bets[i].startDate.split("-");
-      var startDateStr = startDates[1] + '/' + startDates[2]  + '/' + startDates[0] +', ' +  bets[i].startTime+":00";
+      var startDateStr = startDates[1] + '/' + startDates[2] + '/' + startDates[0] + ', ' + bets[i].startTime + ":00";
       var startDate = new Date(startDateStr);
-      let startTimeHourMinutes =bets[i].startTime.split(":");
-      if(startTimeHourMinutes[0]< 15){
+      let startTimeHourMinutes = bets[i].startTime.split(":");
+      if (startTimeHourMinutes[0] < 15) {
         startDate.setDate(startDate.getDate() + 1);
       }
-      
-      if(startDate<dateFR){
+
+      if (startDate < dateFR) {
         bets.splice(i, 1);
         i = i - 1;
       }
     }
   }
 
-  function goToBetPage(gameId,playerId){
-    if(playerId==null)
-    {
-       props.setChangeGameId(gameId);
-       props.setMenuItem(3);
+  function goToBetPage(gameId, playerId) {
+    if (playerId == null) {
+      props.setChangeGameId(gameId);
+      props.setMenuItem(3);
     }
-    else
-    {
+    else {
       props.setChangeGameId(gameId);
       props.setMenuItem(3);
     }
   }
 
-  
+
 
   for (let index = 0; index < bets.length; index++) {
     if (betsType == "player" && bets[index].type == null) {
@@ -161,36 +159,39 @@ function AvailableBets(props) {
   }
 
   return (
-    <div className="availableBets   col-md-10 m-auto">
-      <span>{props.user !== "" && getBalance(props.user)}</span>
-      {props.registered !== "Registration successful" && (
-      <div className="text-white text-center w-100 mx-auto">
-      <h2 className="m-3 text-center">Le site des parieurs NBA</h2>
-      
-      <p className="bg-dark p-5" style={{ borderRadius: "1rem", opacity: 0.8, fontSize: "1.1rem" }}>
-        Retrouve toutes les infos pour parier sur les matchs de la nuit  et joue contre les autre membres de la commu 🏀.
-        <br /><br />
-        Voici comment ça fonctionne :
-        <br /><br />
-        <strong>Analyse les infos :</strong> Clique sur les matchs à venir en haut de page pour voir les stats et infos des équipes qui vont s'affonter.
-        <br /><br />
-        <strong>Pari sur les matchs à venir :</strong> Mise sur les matchs à venir et deviens le GOAT  des pronostiques NBA❕
-        <br />
-        
-        <br /><br />
-        Prêt à plonger dans l'action? 
-        <span> Clique sur un match de la nuit et </span>
-        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(5); return false; }}>inscris-toi</a>&nbsp;ou&nbsp;
-        <a href="#" className="text-white" style={{ textDecoration: "underline" }} onClick={() => { props.setMenuItem(6); return false; }}>connecte-toi</a>
-        <span> </span> pour affronter les autres pronostiqueurs!
-      </p>
-    </div>
-    
-      )}
-    
-    <TopFiveBetters />
-    <LastNightGames />
-    </div>
+
+    <div className="availableBets ">
+      <div className="col-lg-6 mx-auto">
+        <span>{props.user !== "" && getBalance(props.user)}</span>
+        {props.registered !== "Registration successful" && (
+          <div className="text-white text-center w-100">
+            <h2 className="m-3 text-center mb-5 mt-4">Le site des parieurs NBA</h2>
+
+          
+          </div>
+        )}
+      </div>
+      <div className="container-fluid">
+        <div className="row m-auto">
+          <div className="col-lg-3 m-auto d-none d-lg-block">
+            <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=">
+              <img src="bonus15.jpg" alt="bonus15" width={180} className="" style={{ marginLeft: "50px", marginTop: "50px", opacity: 0.8 }} />
+            </a>
+          </div>
+          <TopFiveBetters />
+          <div className="col-lg-3 m-auto d-none d-lg-block">
+            <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=">
+              <img src="psel.png" alt="psel-image" width={180} className="" style={{ marginLeft: "50px", marginTop: "50px", opacity: 0.8 }} />
+            </a>
+          </div>
+        </div>
+        <LastNightGames />
+      </div>
+
+      <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=" style={{ width: "-webkit-fill-available", textAlign: "center" }}>
+        <img src="psel.gif" alt="psel gif" width="400" />
+      </a>
+    </div >
   );
 }
 export default AvailableBets;

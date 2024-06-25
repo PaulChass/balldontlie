@@ -24,19 +24,20 @@ function LastNightGames()
   }, []);
 
   return (
-    <div className="games text-white text-center w-100 mx-auto">
+    <div className="games text-white text-center col-lg-10 w-100 mx-auto">
       <h3 className="m-3 text-center col-8 mr-auto ml-auto p-3">
           Derniers résultats
           </h3>
-      <div className="bg-dark  col-6 m-auto p-2" style={{borderRadius:"5px"}}>
+      <div className="bg-dark  col-6 m-auto p-3" style={{borderRadius:"10px"}}>
         
-          <p className="" style={{ borderRadius: "1rem", opacity: 0.8, fontSize: "1.1rem" }}>
+          <p className="" style={{ borderRadius: "2rem", opacity: 0.7, fontSize: "1.1rem" }}>
           { typeof(games[0])!=='undefined' && games.map((game) =>
           <div className="game row justify-content-around">
-              <span className='m-2'>{game.matchup} </span><span className='m-3'> {game.homeScore} - {game.awayScore} </span>
+              <span className='m-3'>{game.matchup} </span><span className='m-3'> {game.homeScore} - {game.awayScore} </span>
           </div>     
           )}   </p>
       </div>
+       <a href="https://www.enligne.parionssport.fdj.fr/paris-sportifs/bonus"><img src="psel.gif" alt="psel gif" style={{marginTop:'20px'}} /></a> 
     </div>
   )
 }

@@ -594,7 +594,7 @@ function TeamsStatsArrays(props) {
 
   return (
     <div>
-      <h2 className="text-center text-white m-3">
+      <h2 className="text-center text-white m-3 mt-4">
         {props.aTeamName}@{props.hTeamName}
       </h2>
 

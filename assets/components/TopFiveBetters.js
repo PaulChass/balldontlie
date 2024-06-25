@@ -13,8 +13,8 @@ function TopFiveBetters()
   }, []);
 
   return (
-    <div className="betters text-white text-center w-100 mx-auto">
-      <h3 className="m-3 text-center col-8 mr-auto ml-auto">
+    <div className="betters text-white text-center col-lg-6  mx-auto bg-dark" style={{opacity:0.7,padding:"20px",borderRadius:"10px"}}>
+      <h3 className="m-3 text-center col-8 mr-auto ml-auto ">
         Top parieurs
         </h3>
         <p className="col-8 m-auto" style={{ borderRadius: "1rem", opacity: 0.8, fontWeight: "bold" }}>

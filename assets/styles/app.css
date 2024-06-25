@@ -46,12 +46,12 @@ th{font-size:small;}
 td{font-size: small;}
 .small-picture{max-height:30px;}
 .form-group{opacity:0.7;color:black;}
-body{background-image: url('https://www.desktopbackground.org/download/o/2010/09/02/73539_basketball-wood-backgrounds_2560x1440_h.jpg');}
+body{background-image: url('BDL.jpg');}
 #form_save{margin: auto;width:100%;}
 .whitetitle{color:whitesmoke;margin-top:50px;margin-bottom: 10px;}
 .result{font-size:1.3rem;text-align:right;}
 
-.ty-compact-list {
+.ty-compact-list { 
   padding: 0px 5px 5px 0px;
   float: left;
   width: 100%;
