@@ -165,8 +165,8 @@ function AvailableBets(props) {
         <span>{props.user !== "" && getBalance(props.user)}</span>
         {props.registered !== "Registration successful" && (
           <div className="text-white text-center w-100">
-            <h2 className="m-3 text-center mb-5 mt-4">Le site des parieurs NBA</h2>
-
+   <h2 class="whitetitle"> Bienvenue sur Balldontlie  </h2>
+  <p className="whitetitle bg-dark" style={{opacity:0.7,padding:"20px",borderRadius:"10px",fontSize:"1.1rem",fontWeight:"450"}}> Retrouve toutes les stats, cotes, infos et conseil pour faire tes pronostics sur les matchs NBA à venir. <br /> Clique simplement sur un des matchs de la nuit en haut de page pour comparer les équipes qui vont s'affronter </p>
           
           </div>
         )}
@@ -174,23 +174,17 @@ function AvailableBets(props) {
       <div className="container-fluid">
         <div className="row m-auto">
           <div className="col-lg-3 m-auto d-none d-lg-block">
-            <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=">
-              <img src="bonus15.jpg" alt="bonus15" width={180} className="" style={{ marginLeft: "50px", marginTop: "50px", opacity: 0.8 }} />
-            </a>
+           
           </div>
           <TopFiveBetters />
           <div className="col-lg-3 m-auto d-none d-lg-block">
-            <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=">
-              <img src="psel.png" alt="psel-image" width={180} className="" style={{ marginLeft: "50px", marginTop: "50px", opacity: 0.8 }} />
-            </a>
+           
           </div>
         </div>
         <LastNightGames />
       </div>
 
-      <a href="https://wlfdj.adsrv.eacdn.com/C.ashx?btag=a_1129b_108c_&affid=460&siteid=1129&adid=108&c=" style={{ width: "-webkit-fill-available", textAlign: "center" }}>
-        <img src="psel.gif" alt="psel gif" width="400" />
-      </a>
+
     </div >
   );
 }
