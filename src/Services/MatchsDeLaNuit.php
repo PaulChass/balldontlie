@@ -80,7 +80,7 @@ class MatchsDeLaNuit
     private function convertTime($gamedate)
     {
         $hourUTC = substr($gamedate, 11, 2);
-        $hourFR = ($hourUTC + 2) % 24;
+        $hourFR = ($hourUTC + 1) % 24;
         $minutes = substr($gamedate, 14, 2);
         return sprintf('%02d:%s', $hourFR, $minutes);
     }
