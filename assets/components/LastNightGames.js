@@ -37,7 +37,6 @@ function LastNightGames()
           </div>     
           )}   </p>
       </div>
-       <a href="https://www.enligne.parionssport.fdj.fr/paris-sportifs/bonus"><img src="psel.gif" alt="psel gif" style={{marginTop:'20px'}} /></a> 
     </div>
   )
 }
