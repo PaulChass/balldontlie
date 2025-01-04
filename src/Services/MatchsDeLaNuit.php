@@ -1,19 +1,28 @@
 <?php
 namespace App\Services;
 
+<<<<<<< HEAD
 use Symfony\Component\DomCrawler\Crawler;
 
+=======
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
 class MatchsDeLaNuit
 {
     /**
      * Retourne la liste des matchs de la nuit NBA 
      *
+<<<<<<< HEAD
      * @uses getAbvFromTeam()  
      *
      * 
      * @return array
      *     tableau avec noms et id des équipes à domicile et à l'exterieur ainsi que la date
      *     
+=======
+     * @param int $day
+     * @return array
+     *     tableau avec noms et id des équipes à domicile et à l'exterieur ainsi que la date
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
      **/
     public function MatchsDeLaNuit($day = 0)
     {
@@ -29,8 +38,11 @@ class MatchsDeLaNuit
 
         while (!$found) {
             $dateET = date_format($dateVal, "m/d/Y");
+<<<<<<< HEAD
             // only for offseason
            
+=======
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
 
             foreach ($gameDates as $gameDate) {
                 if ($this->isSameDate($gameDate->gameDate, $dateET)) {
@@ -47,15 +59,37 @@ class MatchsDeLaNuit
         return $tonightGames;
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Vérifie si deux dates sont identiques
+     *
+     * @param string $gameDate
+     * @param string $dateET
+     * @return bool
+     **/
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
     private function isSameDate($gameDate, $dateET)
     {
         $gameDateTime = preg_split('/ +/', $gameDate);
         return $gameDateTime[0] === $dateET;
     }
 
+<<<<<<< HEAD
     private function processGame($game)
     {
         $gamedate = $game->gameDateTimeUTC;
+=======
+    /**
+     * Traite les informations d'un match
+     *
+     * @param object $game
+     * @return array
+     **/
+    private function processGame($game)
+    {
+        $gamedate = $game->gameDateTimeUTC ?? '0000-00-00T00:00:00'; // Default value if null
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
         $time = $this->convertTime($gamedate);
 
         $match = [
@@ -67,7 +101,11 @@ class MatchsDeLaNuit
             'status' => $game->gameStatus,
             'statusText' => $game->gameStatusText,
             'startTime' => $this->getStartTime($game->gameStatus, $game->gameStatusText),
+<<<<<<< HEAD
             'day' => explode('T', $game->gameDateUTC)[0],
+=======
+            'day' => explode('T', $game->gameDateUTC ?? '0000-00-00T00:00:00')[0], // Default value if null
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
             'homeScore' => $game->homeTeam->score,
             'awayScore' => $game->awayTeam->score,
             'id' => null,
@@ -77,14 +115,39 @@ class MatchsDeLaNuit
         return $match;
     }
 
+<<<<<<< HEAD
     private function convertTime($gamedate)
     {
         $hourUTC = substr($gamedate, 11, 2);
+=======
+    /**
+     * Convertit l'heure UTC en heure locale
+     *
+     * @param string $gamedate
+     * @return string
+     **/
+    private function convertTime($gamedate)
+    {
+        if ($gamedate === null) {
+            return '00:00'; // Default value or handle the null case appropriately
+        }
+        $hourUTC = (int) substr($gamedate, 11, 2); 
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
         $hourFR = ($hourUTC + 1) % 24;
         $minutes = substr($gamedate, 14, 2);
         return sprintf('%02d:%s', $hourFR, $minutes);
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Obtient l'heure de début du match
+     *
+     * @param int $status
+     * @param string $statusText
+     * @return array|null
+     **/
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
     private function getStartTime($status, $statusText)
     {
         if ($status == 1) {
@@ -97,6 +160,15 @@ class MatchsDeLaNuit
         return null;
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Convertit l'heure PM en heure locale
+     *
+     * @param string $statusText
+     * @return array
+     **/
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
     private function convertPmTime($statusText)
     {
         $pieces = explode("pm", $statusText);
@@ -106,6 +178,15 @@ class MatchsDeLaNuit
         return [$hour, $minutes];
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Convertit l'heure AM en heure locale
+     *
+     * @param string $statusText
+     * @return array
+     **/
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
     private function convertAmTime($statusText)
     {
         $pieces = explode("am", $statusText);
@@ -115,6 +196,15 @@ class MatchsDeLaNuit
         return [$hour, $minutes];
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Retourne les IDs des équipes pour un match donné
+     *
+     * @param string $gameId
+     * @return array
+     **/
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
     public function TeamsId($gameId)
     {
         $schedule = $this->schedule();
@@ -128,10 +218,18 @@ class MatchsDeLaNuit
         }
         return $match;
     }
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
 
-    private function schedule()
+    /**
+     * Récupère le calendrier des matchs depuis l'API NBA
+     *
+     * @return object
+     **/
+    protected function schedule()
     {
         $curl = curl_init();
 
@@ -155,6 +253,10 @@ class MatchsDeLaNuit
 
         return json_decode($response);
     }
+<<<<<<< HEAD
 }
 
 
+=======
+}
+>>>>>>> 1e483bfd8bbdbc076a0b17e0c0a887072ca1425f
