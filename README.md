@@ -1,56 +1,53 @@
 # 🏀 balldontlie
 
-**balldontlie.fr** est une application web responsive développée autour de l’API [balldontlie](https://www.balldontlie.io/), qui permet d'explorer les statistiques NBA en temps réel.
+**balldontlie** est une application web responsive permettant de consulter des statistiques NBA à jour, via un backend développé en **Symfony** qui interagit directement avec les données de [nba.com](https://nba.com).
 
-Le projet propose une interface simple et rapide pour :
-- Rechercher des joueurs
-- Consulter leurs statistiques par saison
-- Suivre des matchs et équipes
+Le projet vise à proposer une alternative légère, rapide et accessible aux bases de données statistiques existantes.
 
 ---
 
-## 🚀 Demo
+## 🚀 Démo
 
 👉 [balldontlie.fr](https://balldontlie.fr)  
-*(Projet hébergé et maintenu par [Paul Chasseuil](https://www.paulchasseuil.fr))*
+*(Projet personnel en ligne et fonctionnel)*
 
 ---
 
 ## 🛠 Stack technique
 
-- **Front-end** : HTML, CSS, JavaScript (Vanilla)
-- **API externe** : [balldontlie.io](https://www.balldontlie.io/)
-- **Hébergement** : Netlify
+- **Backend** : PHP, Symfony
+- **Scraping/API privée** : nba.com (données récupérées depuis le site)
+- **Frontend** : HTML, CSS, JavaScript (Vanilla)
+- **Base de données** : MySQL
+- **Hébergement** : VPS (Linux)
 
 ---
 
 ## 📦 Fonctionnalités principales
 
-- 🔍 Recherche de joueurs par nom
-- 📈 Affichage des statistiques détaillées par saison
-- 📱 Interface responsive mobile/desktop
-- ⚡ Appels API optimisés pour la rapidité
+- 🔍 Recherche de joueurs NBA
+- 📈 Consultation de statistiques par saison
+- 📆 Visualisation des matchs récents ou en cours
+- 🧩 Backend personnalisé sans API tierce publique
 
 ---
 
-## 📸 Aperçu
 
-![screenshot](https://www.paulchasseuil.fr/assets/bdl-screenshot.jpg)  
-*(Ajouter ici une capture d’écran de l’application si possible)*
 
----
+## ⚙️ Installation locale (optionnel)
 
-## 🤝 Contributions
+```bash
+git clone https://github.com/PaulChass/balldontlie.git
+cd balldontlie
 
-Ce projet est personnel, mais ouvert à toute suggestion ou retour.  
-N'hésitez pas à me contacter via [mon site](https://www.paulchasseuil.fr) ou à créer une *issue* sur ce repo.
+# Installer les dépendances Symfony
+composer install
 
----
+# Créer le fichier .env.local et configurer la base de données
+cp .env .env.local
 
-## 🧑‍💻 Auteur
+# Créer la BDD
+php bin/console doctrine:database:create
 
-**Paul Chasseuil** – [Portfolio](https://www.paulchasseuil.fr) | [LinkedIn](https://www.linkedin.com/in/paul-chasseuil-23895117b/)  
-Développeur fullstack spécialisé dans la maintenance et l’évolution d’applications web.
-
----
-
+# Lancer le serveur
+symfony serve
