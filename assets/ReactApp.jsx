@@ -106,7 +106,7 @@ function ReactApp(data) {
     "Detroit Pistons",
     "Charlotte Hornets"
   ];
-  if (data.data !== undefined && gameNumber !== -1) {
+  if (data.data !== undefined && gameNumber !== -1 && data.data[gameNumber] !== undefined) {
     teams = [data.data[gameNumber]['HomeTeamId'], data.data[gameNumber]['AwayTeamId']];
   }
   useEffect(() => {

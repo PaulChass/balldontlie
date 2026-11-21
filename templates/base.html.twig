@@ -10,10 +10,10 @@
         {% block stylesheets %} {% endblock %}
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
               crossorigin="anonymous">
-        <link rel="stylesheet" href="/build/app.css">
+        {{ encore_entry_link_tags('app') }}
         <style type="text/css">
         body{background-color:#8b4513d1;margin:0 80px}a:link,a:visited{color:grey}a:hover{color:#000}a:active{color:green}.card:hover{border-color:#000}.user_name{font-size:14px;font-weight:700}.comments-list .media{border-bottom:1px dotted #ccc}.center-div{margin:0 auto;width:80%}.left{text-align:left}td,th{font-size:small}.small-picture{max-height:30px}.form-group{opacity:.7;color:#fff}
-        body{background-image:url('http://balldontlie.fr/BDL.jpg');background-repeat: round;    background-size: cover; 
+        body{background-image:url('/BDL.jpg');background-repeat: round;    background-size: cover;
 
   background-attachment: fixed;}#form_save{margin:auto;width:100%}.whitetitle{color:#f5f5f5;margin-top:50px;margin-bottom:10px}.result{font-size:1.3rem;text-align:right}.ia-fab{position:fixed;top:12px;right:12px;z-index:1050;background:#8b4513;color:#fff!important;padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}.ia-fab:hover{background:#6f370f;color:#fff!important}
         </style>
@@ -41,7 +41,6 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="{{ asset('/build/app.js') }}"></script>
             {{ encore_entry_script_tags('app') }}
 
         {% endblock %}
