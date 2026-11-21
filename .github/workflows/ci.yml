@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  php-lint:
+    name: Lint PHP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: none
+
+      - name: Lint PHP files (php -l)
+        run: |
+          find src tests migrations config public -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish --no-check-lock
