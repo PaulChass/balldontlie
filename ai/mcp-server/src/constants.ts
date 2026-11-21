@@ -2,8 +2,12 @@
  * Shared constants for the balldontlie NBA MCP server.
  */
 
-/** Current NBA season in the "YYYY-YY" format the stats.nba.com API expects. */
-export const DEFAULT_SEASON = "2025-26";
+/**
+ * Current NBA season in the "YYYY-YY" format the stats.nba.com API expects.
+ * Single source of truth — bump once per offseason (mirrors the PHP app's
+ * App\Nba\Season::CURRENT). 2025-26 is a completed season; 2026-27 is live.
+ */
+export const DEFAULT_SEASON = "2026-27";
 
 /** Upper bound on the size of any single tool response, in characters. */
 export const CHARACTER_LIMIT = 25_000;

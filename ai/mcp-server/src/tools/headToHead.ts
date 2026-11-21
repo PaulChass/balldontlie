@@ -8,7 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { DEFAULT_SEASON } from "../constants.js";
-import { getTeamStats, type SeasonType, type TeamStatsResult } from "../nba/teamStats.js";
+import { getTeamStats, getTeamStatsOrNull, type SeasonType, type TeamStatsResult } from "../nba/teamStats.js";
 import { teamById, teamLabel } from "../nba/teams.js";
 import { ResponseFormat } from "./format.js";
 
@@ -86,6 +86,23 @@ Example:
           signal,
         );
 
+      // The head-to-head split is tolerant: early in a season two teams may not
+      // have met yet, which is a valid "0 meetings" answer, not an error.
+      const h2hSplit = getTeamStatsOrNull(
+        {
+          teamId: args.home_team_id,
+          measureType: "Base",
+          season: args.season,
+          seasonType: args.season_type,
+          lastNGames: 0,
+          location: "all",
+          outcome: "all",
+          opponentTeamId: args.away_team_id,
+          paceAdjust: false,
+        },
+        signal,
+      );
+
       const [hSeason, hForm, hAdv, aSeason, aForm, aAdv, h2h] = await Promise.all([
         base(args.home_team_id, 0, "Base"),
         base(args.home_team_id, args.recent_form_games, "Base"),
@@ -93,7 +110,7 @@ Example:
         base(args.away_team_id, 0, "Base"),
         base(args.away_team_id, args.recent_form_games, "Base"),
         base(args.away_team_id, 0, "Advanced"),
-        base(args.home_team_id, 0, "Base", args.away_team_id),
+        h2hSplit,
       ]);
 
       const payload = {
@@ -103,10 +120,10 @@ Example:
         away: brief(args.away_team_id, aSeason, aForm, aAdv),
         headToHead: {
           description: `${teamLabel(args.home_team_id)} vs ${teamLabel(args.away_team_id)} this season`,
-          games: h2h.stats.GP ?? 0,
-          homeWins: h2h.stats.W ?? 0,
-          homeLosses: h2h.stats.L ?? 0,
-          homePointsPerGame: h2h.stats.PTS ?? null,
+          games: h2h?.stats.GP ?? 0,
+          homeWins: h2h?.stats.W ?? 0,
+          homeLosses: h2h?.stats.L ?? 0,
+          homePointsPerGame: h2h?.stats.PTS ?? null,
         },
       };
 
@@ -127,7 +144,9 @@ Example:
         `- ${line(`Last ${args.recent_form_games}`, aForm.stats)}`,
         "",
         `## Head-to-head (${args.season})`,
-        `- ${payload.headToHead.games} meeting(s); ${payload.home.team} ${payload.headToHead.homeWins}-${payload.headToHead.homeLosses}, ${payload.headToHead.homePointsPerGame ?? "?"} PTS/game.`,
+        payload.headToHead.games === 0
+          ? `- No meetings yet this season.`
+          : `- ${payload.headToHead.games} meeting(s); ${payload.home.team} ${payload.headToHead.homeWins}-${payload.headToHead.homeLosses}, ${payload.headToHead.homePointsPerGame ?? "?"} PTS/game.`,
       ].join("\n");
       return { content: [{ type: "text", text }] };
     },

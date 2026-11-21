@@ -67,7 +67,7 @@ Examples:
           .string()
           .regex(/^\d{4}-\d{2}$/)
           .default(DEFAULT_SEASON)
-          .describe('Season in "YYYY-YY" form, e.g. "2025-26".'),
+          .describe('Season in "YYYY-YY" form, e.g. "2026-27".'),
         season_type: z
           .enum(["Regular Season", "Playoffs", "Pre Season"])
           .default("Regular Season")

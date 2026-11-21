@@ -36,7 +36,7 @@ To use it from a stdio MCP client, launch `node dist/index.js`.
 
 - **TypeScript SDK v2** (`@modelcontextprotocol/server`), stdio transport. A Streamable HTTP transport can be added for remote/public hosting.
 - Columns are read **by header name**, not by positional index — a column reorder upstream can't silently return the wrong stat.
-- The season defaults to the current one (`2025-26`) and is a parameter, not hardcoded.
+- The season defaults to the current one (`2026-27`) and is a parameter, not hardcoded. One constant (`DEFAULT_SEASON`), bumped once per offseason — mirrors the PHP app's `App\Nba\Season::CURRENT`.
 
 ## Data & terms
 

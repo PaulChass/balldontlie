@@ -96,11 +96,16 @@ function buildUrl(query: TeamStatsQuery): string {
   return `${STATS_BASE_URL}/leaguedashteamstats?${search}`;
 }
 
-/** Fetch one team's dashboard row for the given measure type and filters. */
-export async function getTeamStats(
+/**
+ * Fetch one team's dashboard row, or `null` when the filters legitimately
+ * exclude every game (e.g. two teams that have not met yet this season, or
+ * lastNGames larger than games played). A malformed response or a network
+ * failure still throws — a missing row is data, not an error.
+ */
+export async function getTeamStatsOrNull(
   query: TeamStatsQuery,
   signal?: AbortSignal,
-): Promise<TeamStatsResult> {
+): Promise<TeamStatsResult | null> {
   const data = await nbaFetchJson<LeagueDashResponse>(
     buildUrl(query),
     "stats.nba.com",
@@ -114,12 +119,7 @@ export async function getTeamStats(
 
   const rows = rowsByHeader(resultSet);
   const row = rows.find((r) => num(r, "TEAM_ID") === query.teamId);
-  if (!row) {
-    throw new Error(
-      `No ${query.measureType} row found for team ${query.teamId} with these filters. ` +
-        `The filters may exclude every game (e.g. lastNGames too small, or no games vs that opponent).`,
-    );
-  }
+  if (!row) return null;
 
   // Keep every column except the redundant id/name, which we surface separately.
   const stats: Record<string, number | string | null> = {};
@@ -144,6 +144,25 @@ export async function getTeamStats(
     },
     stats,
   };
+}
+
+/**
+ * Fetch one team's dashboard row, throwing when no row matches. Use this when a
+ * missing row means the request was malformed; use `getTeamStatsOrNull` when an
+ * empty result is a valid outcome (e.g. a head-to-head split with no meetings).
+ */
+export async function getTeamStats(
+  query: TeamStatsQuery,
+  signal?: AbortSignal,
+): Promise<TeamStatsResult> {
+  const result = await getTeamStatsOrNull(query, signal);
+  if (!result) {
+    throw new Error(
+      `No ${query.measureType} row found for team ${query.teamId} with these filters. ` +
+        `The filters may exclude every game (e.g. lastNGames too small, or no games vs that opponent).`,
+    );
+  }
+  return result;
 }
 
 export { DEFAULT_SEASON };
