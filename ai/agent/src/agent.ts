@@ -33,6 +33,8 @@ export interface ToolCallTrace {
   name: string;
   input: Record<string, unknown>;
   isError: boolean;
+  /** The tool's result text — the grounding corpus for factuality checks. */
+  resultText: string;
 }
 
 export interface AgentResult {
@@ -104,7 +106,7 @@ export async function runAgent(opts: RunOptions): Promise<AgentResult> {
       if (block.type !== "tool_use") continue;
       const input = (block.input ?? {}) as Record<string, unknown>;
       const { text, isError } = await opts.bridge.callTool(block.name, input);
-      toolCalls.push({ name: block.name, input, isError });
+      toolCalls.push({ name: block.name, input, isError, resultText: text });
       toolResults.push({
         type: "tool_result",
         tool_use_id: block.id,

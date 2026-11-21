@@ -43,11 +43,43 @@ Each run prints the answer followed by a trace of the tools called and the **est
 The hardest part — the MCP ↔ Anthropic integration — is testable offline:
 
 ```bash
-npm run bridge-check   # spawns the server, lists & maps 9 tools, runs a real tool call
-npm run loop-check     # runs the full agent loop against a stubbed model
+npm run bridge-check     # spawns the server, lists & maps 9 tools, runs a real tool call
+npm run loop-check       # runs the full agent loop against a stubbed model
+npm run grounding-check  # unit-tests the factuality checker on crafted inputs
 ```
 
 Only the real model call needs a key; it is standard SDK usage.
+
+## Factuality eval (pillar 3)
+
+A **deterministic** check — no LLM judge — that every distinctive figure an answer
+states traces back to a tool result from the same run:
+
+```bash
+npm run build && npm run eval          # all golden cases (live; needs a key)
+npm run eval -- --only celtics-netrating   # one case
+npm run eval -- --json                 # machine-readable
+```
+
+[src/eval/grounding.ts](src/eval/grounding.ts) extracts the *fingerprint*
+figures — decimals, percentages, long ids — and matches each against the
+concatenated tool output, handling French decimal commas (`112,7`), percent↔
+fraction (`44.7%` ⇆ `0.447`), and stripped years/seasons. Plain small integers
+(counts, per-100 figures, derived sums) are intentionally not flagged — a check
+that cries wolf is worse than one scoped to the figures that can only be *invented*.
+
+The golden set ([src/eval/cases.ts](src/eval/cases.ts)) asserts stable properties
+only (live stats drift): grounded cases invent no figure (plus any fixed golden
+string like a team id); refusal cases (a historical season, a score prediction)
+must decline instead of inventing. A question the tools can't answer therefore
+never yields a confident number.
+
+**Scope — derived aggregates.** The guarantee is *literal* grounding. When asked
+for an average, the agent derives it from the grounded per-game lines and shows
+its work (per-game table + totals) — correct, but not literally in the tool
+output, so the strict checker would flag it. Golden cases query literal figures
+for that reason. Automatically checking derived aggregates (or adding a stats
+tool that returns averages) is a noted next step.
 
 ## Model & cost
 
