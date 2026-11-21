@@ -40,9 +40,8 @@ class MainController extends AbstractController
     /**
      * @Route("/users/by-balance", name="users_by_balance")
      */
-    public function getUsersByBalance(): JsonResponse
+    public function getUsersByBalance(EntityManagerInterface $entityManager): JsonResponse
     {
-        $entityManager = $this->getDoctrine()->getManager();
         $userRepository = $entityManager->getRepository(User::class);
 
         // Utilisation de la méthode findBy pour récupérer la liste de tous les utilisateurs, triée par solde décroissant
@@ -197,18 +196,32 @@ class MainController extends AbstractController
             ['status' => 'pending']
         );
 
+        $data = $this->formatBetsWithLogos($bets, $matchsDeLaNuit);
+
+        return new JsonResponse($data);
+    }
+
+    /**
+     * Formate une liste de paris pour la réponse JSON, en y associant les logos
+     * des équipes trouvés dans les matchs de la nuit.
+     *
+     * @param Bet[]              $bets
+     * @param array<int, array>  $matchsDeLaNuit
+     * @return array<int, array>
+     */
+    private function formatBetsWithLogos(array $bets, array $matchsDeLaNuit): array
+    {
         $data = [];
-        $aLogo =null;
-        $hLogo=null;
         foreach ($bets as $bet) {
-            for ($i = 0; $i < count($matchsDeLaNuit); $i++) {
-                if ($matchsDeLaNuit[$i]['GameId'] == $bet->getGameId()) {
-                    $hLogo = $matchsDeLaNuit[$i]['HomeLogoUrl'];
-                    $aLogo = $matchsDeLaNuit[$i]['AwayLogoUrl'];
+            $hLogo = null;
+            $aLogo = null;
+            foreach ($matchsDeLaNuit as $match) {
+                if ($match['GameId'] == $bet->getGameId()) {
+                    $hLogo = $match['HomeLogoUrl'];
+                    $aLogo = $match['AwayLogoUrl'];
                 }
             }
             $data[] = [
-
                 'id' => $bet->getId(),
                 'Game' => $bet->getGame(),
                 'GameId' => $bet->getGameId(),
@@ -223,14 +236,11 @@ class MainController extends AbstractController
                 'username' => $bet->getUsername(),
                 'playerId' => $bet->getPlayerId(),
                 'hLogo' => $hLogo,
-                'aLogo' => $aLogo
-                // Add other properties as needed
+                'aLogo' => $aLogo,
             ];
         }
 
-        // Create a JSON response with the data
-        $response = new JsonResponse($data);
-        return $response;
+        return $data;
     }
 
     /**
@@ -254,7 +264,6 @@ class MainController extends AbstractController
             if ($today['hours'] > 6 || $today['hours'] < $betTimeArray[0] || ($today['hours'] == $betTimeArray[0] && $today['minutes'] < (int) $betTimeArray[1])) {
 
 
-                $entityManager = $this->getDoctrine()->getManager();
                 $betRepository = $entityManager->getRepository(Bet::class);
                 $userRepository = $entityManager->getRepository(User::class);
                 $user = $userRepository->findBy(
@@ -311,9 +320,8 @@ class MainController extends AbstractController
     /**
      * @Route("/fetch-bets/{gameId}", name="fetch_bets")
      */
-    public function fetchBets(string $gameId, MatchsDeLaNuit $MatchsDeLaNuit): JsonResponse
+    public function fetchBets(string $gameId, MatchsDeLaNuit $MatchsDeLaNuit, EntityManagerInterface $entityManager): JsonResponse
     {
-        $entityManager = $this->getDoctrine()->getManager();
         $betRepository = $entityManager->getRepository(Bet::class);
         $matchsDeLaNuit = $MatchsDeLaNuit->MatchsDeLanuit();
 
@@ -325,48 +333,16 @@ class MainController extends AbstractController
         );
 
 
-        // Convert the results to an array or customize the data you want to include in the JSON response
-        $data = [];
-        foreach ($bets as $bet) {
-            for ($i = 0; $i < count($matchsDeLaNuit); $i++) {
-                if ($matchsDeLaNuit[$i]['GameId'] == $bet->getGameId()) {
-                    $hLogo = $matchsDeLaNuit[$i]['HomeLogoUrl'];
-                    $aLogo = $matchsDeLaNuit[$i]['AwayLogoUrl'];
-                }
-            }
-            $data[] = [
+        $data = $this->formatBetsWithLogos($bets, $matchsDeLaNuit);
 
-                'id' => $bet->getId(),
-                'Game' => $bet->getGame(),
-                'GameId' => $bet->getGameId(),
-                'Odd' => $bet->getOdd(),
-                'Amount' => $bet->getAmount(),
-                'HomeorAway' => $bet->getHomeOrAway(),
-                'Username' => $bet->getUsername(),
-                'startTime' => $bet->getStartTime(),
-                'startDate' => $bet->getStartDate(),
-                'type' => $bet->getBetType(),
-                'typeValue' => $bet->getBetTypeValue(),
-                'username' => $bet->getUsername(),
-                'playerId' => $bet->getPlayerId(),
-                'hLogo' => $hLogo,
-                'aLogo' => $aLogo
-                // Add other properties as needed
-            ];
-        }
-
-
-        // Create a JSON response with the data
-        $response = new JsonResponse($data);
-        return $response;
+        return new JsonResponse($data);
     }
 
     /**
      * @Route("/balance/{user}", name="balance")
      */
-    public function balance(string $user): JsonResponse
+    public function balance(string $user, EntityManagerInterface $entityManager): JsonResponse
     {
-        $entityManager = $this->getDoctrine()->getManager();
         $userRepository = $entityManager->getRepository(User::class);
 
         $user = $userRepository->findby(
@@ -381,10 +357,9 @@ class MainController extends AbstractController
     /**
      * @Route("/bets/{user}", name="bets")
      */
-    public function bets(string $user, StatsManager $statsManager): JsonResponse
+    public function bets(string $user, StatsManager $statsManager, EntityManagerInterface $entityManager): JsonResponse
     {
         if (isset($user) && $user != '') {
-            $entityManager = $this->getDoctrine()->getManager();
             $betRepository = $entityManager->getRepository(Bet::class);
             $bets = $betRepository->findby(
                 ['username' => $user]
@@ -500,9 +475,8 @@ class MainController extends AbstractController
     /**
      * @Route("/check", name="check")
      */
-    public function check(BetManager $betManager)
+    public function check(BetManager $betManager, EntityManagerInterface $entityManager)
     {
-        $entityManager = $this->getDoctrine()->getManager();
         $betRepository = $entityManager->getRepository(Bet::class);
         $userRepository = $entityManager->getRepository(User::class);
         $betManager->checkGames($betRepository, $userRepository, $entityManager);
