@@ -1,26 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<!-- https://docs.phpunit.de/en/10.5/configuration.html -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
-         colors="true"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
 >
     <php>
-        <env name="KERNEL_CLASS" value="App\Kernel"/>
+        <ini name="display_errors" value="1" />
+        <ini name="error_reporting" value="-1" />
+        <env name="KERNEL_CLASS" value="App\Kernel" />
     </php>
+
     <testsuites>
-        <testsuite name="Application Test Suite">
+        <!-- Tests unitaires purs (sans base de données ni réseau) : lancés en CI. -->
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+
+        <!-- Tests d'intégration (WebTestCase, dépôts) : nécessitent une base de
+             données de test et un accès réseau, donc non lancés en CI. -->
+        <testsuite name="integration">
             <directory>tests</directory>
+            <exclude>tests/Unit</exclude>
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <source>
         <include>
             <directory suffix=".php">src</directory>
         </include>
-        <report>
-            <html outputDirectory="public/build/coverage"/>
-        </report>
-    </coverage>
+    </source>
 </phpunit>
