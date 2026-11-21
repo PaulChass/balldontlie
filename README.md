@@ -133,24 +133,36 @@ L'identité de l'utilisateur est portée par une **session serveur** (cookie `Ht
 
 ## 🚀 Déploiement & rollback
 
-Le serveur suit `origin/master`. Le **back** se déploie par `git pull` ; le **front**
-(bundle `public/build/`, hors git) se met à jour par un build local puis upload FTP de
-`app.js` / `app.css`.
+### En une commande (recommandé)
 
-```bash
-# Déployer le back (sécurité, API)
-git pull origin master
-php bin/console cache:clear        # recharge les routes / la config
+Le script [`deploy/deploy.ps1`](deploy/README-deploy.md) build le front en local puis,
+en SSH, met à jour le back (`git pull` + `cache:clear`) et envoie le bundle — il
+remplace le `git pull` manuel + l'upload FTP. Configuration (clé SSH, cible) et détails
+dans [`deploy/README-deploy.md`](deploy/README-deploy.md).
 
-# Mettre à jour le front (optionnel, pour les évolutions d'interface)
-npm run build                      # en local, puis FTP de public/build/app.js et app.css
-
-# Revenir à un palier précédent (tags posés à chaque lot)
-git fetch --tags
-git reset --hard lot-5            # ou baseline-pre-refactor pour l'état d'origine
+```powershell
+pwsh deploy/deploy.ps1
 ```
 
-> La sécurité du Lot 6 vit côté serveur : elle s'applique dès le `git pull` + `cache:clear`,
+### À la main (équivalent)
+
+Le serveur suit `origin/master`. Le **back** se déploie par `git pull` ; le **front**
+(bundle `public/build/`, hors git) par un build local puis upload de `app.js` / `app.css`.
+
+```bash
+# Back (sécurité, API) — s'applique immédiatement
+git pull origin master
+php bin/console cache:clear
+
+# Front (interface) — build local, puis upload de public/build/app.js et app.css
+npm run build
+
+# Rollback : revenir à un palier tagué
+git fetch --tags
+git reset --hard lot-6            # ou baseline-pre-refactor pour l'état d'origine
+```
+
+> La sécurité (Lot 6) vit côté serveur : elle s'applique dès le `git pull` + `cache:clear`,
 > même si le bundle front n'est pas encore réuploadé.
 
 ---

@@ -39,4 +39,6 @@ yarn-error.log
 /app.css
 # Cache PHPUnit 10
 /.phpunit.cache/
+# Config de déploiement : identifiants/chemins SSH, jamais committés
+/deploy/deploy.config.ps1
 ###< projet ###
