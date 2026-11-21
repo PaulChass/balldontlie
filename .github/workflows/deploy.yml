@@ -27,10 +27,10 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: yarn
@@ -44,8 +44,15 @@ jobs:
       - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          # Écrit la clé en retirant d'éventuels retours chariot Windows (CRLF),
+          # qui font échouer le parsing OpenSSH ("error in libcrypto").
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          # Validation précoce : message clair si la clé est illisible ou protégée par passphrase.
+          if ! ssh-keygen -y -P '' -f ~/.ssh/deploy_key > /dev/null 2>&1; then
+            echo "::error::SSH_PRIVATE_KEY illisible : régénère une clé ed25519 SANS passphrase et recolle tout le contenu (lignes BEGIN/END incluses)."
+            exit 1
+          fi
 
       - name: Update back on server (git pull + cache clear)
         env:
