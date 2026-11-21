@@ -53,7 +53,8 @@ class BetManager
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
@@ -76,7 +77,9 @@ class BetManager
         );
         $response = curl_exec($curl);
         $teamsGames = json_decode($response);
-
+        if ($teamsGames === null || !isset($teamsGames->resultSets[0]->rowSet)) {
+            return; // API NBA indisponible : on abandonne proprement ce cycle de vérification
+        }
 
         $resId = [];
         $j = 0;
@@ -103,8 +106,9 @@ class BetManager
         for ($i = 0; $i < count($bets); $i++) {
             $j = 0;
             $betGameId = $bets[$i]->getGameId();
+            $betResult = 'not played';
             $notFound = true;
-            while ($notFound) {
+            while ($notFound && isset($resId[$j])) {
                 if ($betGameId == $resId[$j][0]) {
                     $betResult = $resId[$j][1];
                     $notFound = false;
@@ -173,7 +177,8 @@ class BetManager
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
@@ -196,6 +201,7 @@ class BetManager
         );
         $response = curl_exec($curl);
         $obj = json_decode($response);
+        $statsResultsAvailable = ($obj !== null && isset($obj->resultSets[0]->rowSet));
         $gameIds = [];
         $playerIds = [];
         for ($i = 0; $i < count($statsBets); $i++) {
@@ -205,7 +211,7 @@ class BetManager
         
         $playerIds = array_values($playerIds);
         $ids = array_values($gameIds);
-        for ($i = 0; $i < count($statsBets); $i++) {
+        for ($i = 0; $statsResultsAvailable && $i < count($statsBets); $i++) {
             $foundPlayerGame = false;
             $iterator = count($obj->resultSets[0]->rowSet) - 1;
 

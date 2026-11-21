@@ -1,10 +1,22 @@
 <?php
 namespace App\Services;
 
+use App\Nba\NbaClient;
+
 class MatchsDeLaNuit
 {
+    private NbaClient $nbaClient;
+
+    /** Mémoïsation du calendrier pour éviter de le re-télécharger plusieurs fois par requête. */
+    private ?object $scheduleCache = null;
+
+    public function __construct(NbaClient $nbaClient)
+    {
+        $this->nbaClient = $nbaClient;
+    }
+
     /**
-     * Retourne la liste des matchs de la nuit NBA 
+     * Retourne la liste des matchs de la nuit NBA
      *
      * @param int $day
      * @return array
@@ -18,11 +30,18 @@ class MatchsDeLaNuit
         $tonightGames = [];
 
         $schedule = $this->schedule();
+        if ($schedule === null || !isset($schedule->leagueSchedule->gameDates)) {
+            return $tonightGames;
+        }
         $gameDates = $schedule->leagueSchedule->gameDates;
 
         $found = false;
+        $safety = 0;
 
-        while (!$found) {
+        // Borne de sécurité : au-delà de 30 itérations (jours) sans match trouvé,
+        // on s'arrête au lieu de boucler indéfiniment (intersaison, API HS, etc.).
+        while (!$found && $safety < 30) {
+            $safety++;
             $dateET = date_format($dateVal, "m/d/Y");
 
             foreach ($gameDates as $gameDate) {
@@ -158,7 +177,11 @@ class MatchsDeLaNuit
     public function TeamsId($gameId)
     {
         $schedule = $this->schedule();
+        if ($schedule === null || !isset($schedule->leagueSchedule->gameDates)) {
+            return [];
+        }
         $gameDates = $schedule->leagueSchedule->gameDates;
+        $match = [];
         for ($i = 0; $i < count($gameDates); $i++) {
             for ($j = 0; $j < count($gameDates[$i]->games); $j++) {
                 if ($gameDates[$i]->games[$j]->gameId == $gameId) {
@@ -176,26 +199,17 @@ class MatchsDeLaNuit
      **/
     protected function schedule()
     {
-        $curl = curl_init();
+        if ($this->scheduleCache !== null) {
+            return $this->scheduleCache;
+        }
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                'Cookie: akacd_data_nba_net_ems=1616059329~rv=14~id=f99c4dca08f89687c039a759f2256383'
-            ),
-        ));
+        $this->scheduleCache = $this->nbaClient->getJsonCached(
+            'nba_schedule_league_v2',
+            'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json',
+            ['Cookie: akacd_data_nba_net_ems=1616059329~rv=14~id=f99c4dca08f89687c039a759f2256383'],
+            60
+        );
 
-        $response = curl_exec($curl);
-
-        curl_close($curl);
-
-        return json_decode($response);
+        return $this->scheduleCache;
     }
 }
