@@ -75,12 +75,41 @@ string like a team id); refusal cases (a historical season, a score prediction)
 must decline instead of inventing. A question the tools can't answer therefore
 never yields a confident number.
 
-**Scope — derived aggregates.** The guarantee is *literal* grounding. When asked
-for an average, the agent derives it from the grounded per-game lines and shows
-its work (per-game table + totals) — correct, but not literally in the tool
-output, so the strict checker would flag it. Golden cases query literal figures
-for that reason. Automatically checking derived aggregates (or adding a stats
-tool that returns averages) is a noted next step.
+**Grounded / derived / invented.** The checker sorts each figure into three
+buckets: *grounded* (appears literally in the tool output), *derived* (equals the
+sum or difference of two tool values — the common analytical case, e.g. a
+net-rating gap), or *ungrounded* (neither — a hallucination, the only thing that
+fails a run). Pairwise derivation uses a tight tolerance so a truly invented
+number isn't explained away by coincidence. Multi-term aggregates (a 5-game
+average) are not auto-derived, so golden cases query literal figures; a stats
+tool that returns averages would close that last gap.
+
+## Game previews (usage B)
+
+Auto-generated, grounded **pre-game briefings** for a slate. For each game the
+agent runs with a preview-specific system prompt ([src/preview/preview.ts](src/preview/preview.ts))
+that keeps the factuality contract but asks for a fixed structure (Forme, Clés,
+Confrontation, Blessés, À suivre). It calls `get_head_to_head` and `get_injuries`,
+so every figure traces to a tool result.
+
+Each preview is checked twice:
+
+- **Factuality** — the same deterministic grounding check as the eval.
+- **Editorial quality** — an **LLM-as-judge** ([src/preview/judge.ts](src/preview/judge.ts),
+  Sonnet 5.5) scores clarity, insight, usefulness, structure and tone 1–5, and
+  flags any betting **incitement** as a hard fail. Judging is what a
+  deterministic check can't do; grounding is what a judge shouldn't be trusted
+  to do — so the two are kept separate.
+
+```bash
+npm run preview                  # 1 preview for today (+ grounding + judge)
+npm run preview -- --all         # the whole slate
+npm run preview -- --limit 2 --day 1 --no-judge --json
+```
+
+Previews are multi-step, so they run on Opus by default. A live run: a
+Bucks @ 76ers briefing, `grounding ✓ (26 literal, 2 derived differentials)`,
+judge `overall 4/5 · incitation=non · PASS`, ~$0.11 (preview + judge).
 
 ## Routing & cost (pillar 4)
 

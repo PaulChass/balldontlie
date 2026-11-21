@@ -56,6 +56,8 @@ export interface RunOptions {
   maxTurns?: number;
   /** Per-request output-token cap. */
   maxTokens?: number;
+  /** Override the system prompt (e.g. the preview briefing prompt). */
+  systemPrompt?: string;
 }
 
 export async function runAgent(opts: RunOptions): Promise<AgentResult> {
@@ -63,6 +65,7 @@ export async function runAgent(opts: RunOptions): Promise<AgentResult> {
   const maxTurns = opts.maxTurns ?? 12;
   const maxTokens = opts.maxTokens ?? 16000;
 
+  const systemPrompt = opts.systemPrompt ?? SYSTEM_PROMPT;
   const tools = await opts.bridge.listAnthropicTools();
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: opts.question }];
   const usage = emptyUsage();
@@ -78,7 +81,7 @@ export async function runAgent(opts: RunOptions): Promise<AgentResult> {
       model: opts.model.id,
       max_tokens: maxTokens,
       thinking: { type: "adaptive" },
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       tools,
       messages,
     });

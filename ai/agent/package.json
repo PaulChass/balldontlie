@@ -16,7 +16,8 @@
     "grounding-check": "tsx scripts/grounding-check.ts",
     "router-check": "tsx scripts/router-check.ts",
     "eval": "tsx scripts/eval.ts",
-    "bench": "tsx scripts/bench.ts"
+    "bench": "tsx scripts/bench.ts",
+    "preview": "tsx scripts/preview.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

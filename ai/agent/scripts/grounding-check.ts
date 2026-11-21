@@ -64,4 +64,22 @@ const ok = (label: string, cond: boolean) => {
   ok("small integers ignored", r.ok && r.ungrounded.length === 0);
 }
 
+// 7. A differential (difference of two tool values) is "derived", not invented.
+{
+  const r = checkGrounding(
+    "L'écart de net rating est de 15,5 points.",
+    "PHI NET_RATING 2.7 | MIL NET_RATING -12.8",
+  );
+  ok(
+    "pairwise differential counts as derived",
+    r.ok && r.derived.some((x) => x.value === 15.5) && r.ungrounded.length === 0,
+  );
+}
+
+// 8. An invented number that is NOT a simple derivation is still flagged.
+{
+  const r = checkGrounding("Il a marqué 73,9 points.", "PHI NET_RATING 2.7 | MIL NET_RATING -12.8");
+  ok("non-derivable invention still flagged", !r.ok && r.ungrounded.some((x) => x.value === 73.9));
+}
+
 console.error(`\nGrounding self-test passed (${n} assertions).`);

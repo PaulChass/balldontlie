@@ -73,22 +73,39 @@ function near(a: number, b: number): boolean {
   return diff <= 0.15 || diff <= Math.abs(b) * 0.01;
 }
 
+// Tighter tolerance for derivations: a sum/difference of 1-decimal stats is exact.
+function nearTight(a: number, b: number): boolean {
+  return Math.abs(a - b) <= 0.05;
+}
+
 export interface GroundingReport {
+  /** Figures that appear literally in the tool output. */
   grounded: SigNumber[];
+  /** Figures that equal a simple sum/difference of two tool values (e.g. a
+   *  net-rating gap). Acceptable — computed from grounded numbers, not invented. */
+  derived: SigNumber[];
+  /** Figures that are neither literal nor a simple derivation — a hallucination. */
   ungrounded: SigNumber[];
-  /** True when nothing distinctive in the answer is unaccounted for. */
+  /** True when nothing distinctive in the answer is a hallucination. */
   ok: boolean;
 }
 
 /**
  * Check an answer's figures against the concatenated tool-result text.
+ *
+ * A figure is grounded when it appears literally in the tool output; derived
+ * when it equals the sum or difference of two tool values (the common analytical
+ * case — a differential, a gap); otherwise ungrounded (invented). Ids must be
+ * literal. Deriving is bounded to pairwise sum/difference with a tight tolerance,
+ * so a truly invented number is not explained away by coincidence.
  */
 export function checkGrounding(answer: string, corpus: string): GroundingReport {
   const corpusNums = allNumbers(corpus);
   const grounded: SigNumber[] = [];
+  const derived: SigNumber[] = [];
   const ungrounded: SigNumber[] = [];
 
-  const matches = (n: SigNumber): boolean => {
+  const isLiteral = (n: SigNumber): boolean => {
     for (const c of corpusNums) {
       if (n.isBigInt) {
         if (c === n.value) return true;
@@ -104,9 +121,23 @@ export function checkGrounding(answer: string, corpus: string): GroundingReport 
     return false;
   };
 
+  const isDerived = (n: SigNumber): boolean => {
+    if (n.isBigInt) return false; // ids are never "derived"
+    for (let i = 0; i < corpusNums.length; i++) {
+      for (let j = i + 1; j < corpusNums.length; j++) {
+        const a = corpusNums[i];
+        const b = corpusNums[j];
+        if (nearTight(a + b, n.value) || nearTight(Math.abs(a - b), n.value)) return true;
+      }
+    }
+    return false;
+  };
+
   for (const n of extractSignificantNumbers(answer)) {
-    (matches(n) ? grounded : ungrounded).push(n);
+    if (isLiteral(n)) grounded.push(n);
+    else if (isDerived(n)) derived.push(n);
+    else ungrounded.push(n);
   }
 
-  return { grounded, ungrounded, ok: ungrounded.length === 0 };
+  return { grounded, derived, ungrounded, ok: ungrounded.length === 0 };
 }
