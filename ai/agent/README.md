@@ -1,0 +1,217 @@
+# balldontlie-nba-agent
+
+A **grounded NBA stats agent**. It answers a natural-language question by letting Claude plan and call the [balldontlie MCP tools](../mcp-server), then reports **only numbers that trace back to a tool result** — no stats from memory, no guessing.
+
+It is the usage-A surface of the project: natural-language Q&A over real, parametrable NBA data.
+
+## How it works
+
+```
+question ─▶ Claude (Messages API) ──tool_use──▶ MCP bridge ──stdio──▶ MCP server ──▶ stats.nba.com
+                 ▲                                                                         │
+                 └──────────────── tool_result (real numbers) ◀───────────────────────────┘
+          (loop until the model answers)
+```
+
+The agent runs an explicit `while (stop_reason === "tool_use")` loop ([src/agent.ts](src/agent.ts)) rather than a framework runner — the orchestration is the point. On each turn it:
+
+1. sends the conversation + the 9 tool definitions to Claude,
+2. executes any tool calls over MCP and feeds the results back verbatim,
+3. repeats until Claude produces a final, grounded answer.
+
+A system-prompt **factuality contract** enforces the core rule: every figure must come from a tool result in the conversation, and the agent must say so when the tools can't answer. This is pillar 3 of the project (grounded, reproducible numbers) expressed as a prompt + a loop you can read.
+
+## Run
+
+```bash
+# one-time: build the MCP server it drives
+cd ../mcp-server && npm install && npm run build && cd -
+
+npm install
+npm run build
+
+export ANTHROPIC_API_KEY=sk-ant-...        # or: ant auth login
+npm run ask -- "How are the Warriors shooting from three this season?"
+npm run ask -- --model haiku "Who plays tonight?"
+npm run ask -- --json "Celtics last 5 games"
+```
+
+Each run prints the answer followed by a trace of the tools called and the **estimated token cost** of the run.
+
+## Checks (no API key needed)
+
+The hardest part — the MCP ↔ Anthropic integration — is testable offline:
+
+```bash
+npm run bridge-check     # spawns the server, lists & maps 9 tools, real tool call + cache hit
+npm run loop-check       # runs the full agent loop against a stubbed model
+npm run grounding-check  # unit-tests the factuality checker on crafted inputs
+npm run router-check     # locks the routing policy to expected decisions
+```
+
+Only the real model call needs a key; it is standard SDK usage.
+
+## Factuality eval (pillar 3)
+
+A **deterministic** check — no LLM judge — that every distinctive figure an answer
+states traces back to a tool result from the same run:
+
+```bash
+npm run build && npm run eval          # all golden cases (live; needs a key)
+npm run eval -- --only celtics-netrating   # one case
+npm run eval -- --json                 # machine-readable
+```
+
+[src/eval/grounding.ts](src/eval/grounding.ts) extracts the *fingerprint*
+figures — decimals, percentages, long ids — and matches each against the
+concatenated tool output, handling French decimal commas (`112,7`), percent↔
+fraction (`44.7%` ⇆ `0.447`), and stripped years/seasons. Plain small integers
+(counts, per-100 figures, derived sums) are intentionally not flagged — a check
+that cries wolf is worse than one scoped to the figures that can only be *invented*.
+
+The golden set ([src/eval/cases.ts](src/eval/cases.ts)) asserts stable properties
+only (live stats drift): grounded cases invent no figure (plus any fixed golden
+string like a team id); refusal cases (a historical season, a score prediction)
+must decline instead of inventing. A question the tools can't answer therefore
+never yields a confident number.
+
+**Grounded / derived / invented.** The checker sorts each figure into three
+buckets: *grounded* (appears literally in the tool output), *derived* (equals the
+sum or difference of two tool values — the common analytical case, e.g. a
+net-rating gap), or *ungrounded* (neither — a hallucination, the only thing that
+fails a run). Pairwise derivation uses a tight tolerance so a truly invented
+number isn't explained away by coincidence. Multi-term aggregates (a 5-game
+average) are not auto-derived, so golden cases query literal figures; a stats
+tool that returns averages would close that last gap.
+
+## Game previews (usage B)
+
+Auto-generated, grounded **pre-game briefings** for a slate. For each game the
+agent runs with a preview-specific system prompt ([src/preview/preview.ts](src/preview/preview.ts))
+that keeps the factuality contract but asks for a fixed structure (Forme, Clés,
+Confrontation, Blessés, À suivre). It calls `get_head_to_head` and `get_injuries`,
+so every figure traces to a tool result.
+
+Each preview is checked twice:
+
+- **Factuality** — the same deterministic grounding check as the eval.
+- **Editorial quality** — an **LLM-as-judge** ([src/preview/judge.ts](src/preview/judge.ts),
+  Sonnet 5.5) scores clarity, insight, usefulness, structure and tone 1–5, and
+  flags any betting **incitement** as a hard fail. Judging is what a
+  deterministic check can't do; grounding is what a judge shouldn't be trusted
+  to do — so the two are kept separate.
+
+```bash
+npm run preview                  # 1 preview for today (+ grounding + judge)
+npm run preview -- --all         # the whole slate
+npm run preview -- --limit 2 --day 1 --no-judge --json
+```
+
+Previews are multi-step, so they run on Opus by default. A live run: a
+Bucks @ 76ers briefing, `grounding ✓ (26 literal, 2 derived differentials)`,
+judge `overall 4/5 · incitation=non · PASS`, ~$0.11 (preview + judge).
+
+## Routing & cost (pillar 4)
+
+The model is chosen automatically by a **deterministic complexity router**
+([src/router.ts](src/router.ts)) — an explainable policy, no black box, no extra
+LLM call. It picks the cheapest model that can do the job:
+
+| Tier | Model | $/1M in | $/1M out | When |
+|------|-------|---------|----------|------|
+| light | `claude-haiku-5-5` | $0.10 | $0.50 | single lookup (who plays, injuries, a score, an id) |
+| standard | `claude-sonnet-5-5` | $2 | $10 | single-entity stat (a team's record, a player's line) |
+| heavy | `claude-opus-5-5` | $4 | $20 | comparison, preview, "why", multi-step analysis |
+
+Ambiguous questions default to Sonnet — never Haiku — so routing never
+under-serves a hard question to save a cent. `--model opus|sonnet|haiku`
+forces one; prices are Anthropic first-party rates (claude-api, 2026-11-03).
+
+Every run reports model + routing reasons, latency, token cost, the cost the
+**same run would have had on all-Opus**, and tool-cache hits:
+
+```
+— routed → Haiku 5.5 (light:schedule) · 2 turn(s) · 3.2s · tools: get_tonight_games
+  tokens: 11270 in / 360 out · est. cost $0.00131 · all-Opus $0.05228 → saved 97%
+  tool-cache: 0 hit / 1 miss
+```
+
+**Tool cache.** [src/mcpBridge.ts](src/mcpBridge.ts) memoises identical tool
+calls for a TTL (60s, `--no-cache` to disable), cutting repeated NBA API latency
+and cost. Hits require identical arguments, so cross-question reuse is
+opportunistic (the model often rephrases a query); the mechanism is proven
+deterministically in `bridge-check`.
+
+**Benchmark** the policy end-to-end (live):
+
+```bash
+npm run bench        # representative mix; prints a table + routed-vs-all-Opus savings
+```
+
+A sample run routed 5 questions for **$0.17 vs $0.38 on all-Opus — 57% saved**,
+with light lookups at ~$0.0013 each instead of ~$0.05. (Numbers vary with the
+live slate; the all-Opus figure reprices the same token counts, so it is an
+estimate.)
+
+## Web surface (Symfony integration)
+
+The agent is also served over HTTP so the Symfony site can expose it on a page
+(`/assistant`): a **"pose ta question NBA"** bar (usage A) and **auto previews**
+of tonight's games (usage B).
+
+```
+browser ──▶ Symfony  (/api/nba/ask, /api/nba/previews)
+                 │   proxy: cache + per-IP throttle, holds no key
+                 ▼
+          Node agent service  (127.0.0.1:8787)  ◀── ANTHROPIC_API_KEY lives here
+                 │
+                 ▼
+          MCP server ──▶ stats.nba.com / cdn.nba.com
+```
+
+The browser only ever talks to Symfony. **The Anthropic API key stays in the
+Node process and never reaches the browser.** [src/server.ts](src/server.ts)
+reuses the exact same agent, router and preview code as the CLI — it is only a
+thin HTTP layer (one shared MCP bridge kept warm, agent runs serialised so a
+burst of visitors can't fan out into parallel model calls).
+
+| Method | Route | Does |
+|--------|-------|------|
+| GET | `/health` | liveness + MCP tool count + whether a key is set |
+| POST | `/ask` `{question}` | routed, grounded answer + model + cost + grounding |
+| GET | `/previews?day=0&limit=2` | grounded briefings for the slate (cached 1h) |
+
+### Run it locally
+
+```bash
+# 1. build the MCP server and the agent (once)
+cd ai/mcp-server && npm install && npm run build && cd -
+cd ai/agent && npm install && npm run build
+
+# 2. start the agent service (needs ANTHROPIC_API_KEY in the project .env)
+npm run serve            # → http://127.0.0.1:8787  (npm run serve:dev for tsx)
+
+# 3. build the site's front-end and serve Symfony (repo root)
+cd ../.. && yarn build   # compiles the `assistant` Encore entry
+symfony serve            # then open /assistant
+```
+
+The Symfony side is [AssistantController.php](../../src/Controller/AssistantController.php)
+(proxy + cache + throttle), the page `templates/assistant/index.html.twig`, and
+a React component `assets/components/Assistant.js` (Encore entry `assistant`). A
+"🤖 Assistant IA" link is added to every page via `base.html.twig`.
+
+- **Service URL** is configurable with the `NBA_AGENT_URL` env var (default
+  `http://127.0.0.1:8787`); set it in the project `.env` if the service runs
+  elsewhere.
+- **Cost guards**: `/ask` is throttled to 8 requests / IP / minute; previews run
+  on Opus but are cached in the Node service (1h) *and* in Symfony (55 min), so
+  a slate is generated at most once per hour.
+
+### Deploying (later, with explicit sign-off)
+
+Run the Node service as a daemon (systemd / pm2) bound to `127.0.0.1`, with
+`ANTHROPIC_API_KEY` in its environment. **Same data caveat as the PHP app:** the
+agent fetches from stats.nba.com / cdn.nba.com, so a server IP that Akamai blocks
+affects the agent too — resolve the schedule-source question before relying on
+live previews in production.
