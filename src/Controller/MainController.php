@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Goutte\Client;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Services\BetManager;
 
 use App\Services\MatchsDeLaNuit;
 use App\Services\StatsManager;
@@ -18,6 +17,7 @@ use App\Entity\User;
 use App\Entity\Bet;
 use App\Entity\Comment;
 use App\Security\LegacyPasswordHasher;
+use App\Security\SessionAuth;
 
 
 class MainController extends AbstractController
@@ -68,7 +68,7 @@ class MainController extends AbstractController
     /**
      * @Route("/comment", name="comment", methods={"POST"})
      */
-    public function comment(Request $request, EntityManagerInterface $entityManager)
+    public function comment(Request $request, EntityManagerInterface $entityManager, SessionAuth $sessionAuth)
     {
         $data = json_decode($request->getContent(), true);
         if (!is_array($data) || !isset($data['gameId']) || empty($data['message'])) {
@@ -76,7 +76,11 @@ class MainController extends AbstractController
         }
 
         $comment = new Comment();
-        if (($data['user'] ?? '') == '') {
+        $currentUser = $sessionAuth->getUserName();
+        if ($currentUser !== null) {
+            // Connecté : on force le vrai pseudo, impossible de commenter au nom d'un autre.
+            $comment->setUsername($currentUser);
+        } elseif (($data['user'] ?? '') == '') {
             $comment->setUsername('anon' . ($data['randomId'] ?? ''));
         } else {
             $comment->setUsername($data['user']);
@@ -118,7 +122,7 @@ class MainController extends AbstractController
     /**
      * @Route("/register", name="registration", methods={"POST"})
      */
-    public function register(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher)
+    public function register(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher, SessionAuth $sessionAuth)
     {
         $data = json_decode($request->getContent(), true);
         if (!is_array($data) || empty($data['name']) || empty($data['email']) || empty($data['password'])) {
@@ -135,6 +139,7 @@ class MainController extends AbstractController
         if ($existingByMail !== null) {
             if ($passwordHasher->verify($existingByMail, $data['password'])) {
                 $entityManager->flush(); // persiste une éventuelle migration du hash hérité
+                $sessionAuth->login($existingByMail); // ouvre la session (ce compte existe déjà)
                 return new JsonResponse(['message' => 'Registration successful'], 200);
             }
             return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
@@ -149,6 +154,8 @@ class MainController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
+        $sessionAuth->login($user);
+
         return new JsonResponse(['message' => 'Registration successful'], 200);
     }
 
@@ -156,7 +163,7 @@ class MainController extends AbstractController
     /**
      * @Route("/signin", name="signin", methods={"POST"})
      */
-    public function signIn(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher)
+    public function signIn(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher, SessionAuth $sessionAuth)
     {
         $data = json_decode($request->getContent(), true);
         if (!is_array($data) || empty($data['password']) || (empty($data['name']) && empty($data['email']))) {
@@ -179,10 +186,40 @@ class MainController extends AbstractController
 
         if ($passwordHasher->verify($user, $data['password'])) {
             $entityManager->flush(); // persiste une éventuelle migration du hash hérité
+            $sessionAuth->login($user);
             return new JsonResponse(['message' => 'Registration successful'], 200);
         }
 
         return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
+    }
+
+    /**
+     * Utilisateur actuellement connecté (permet au front de restaurer la session au chargement).
+     *
+     * @Route("/me", name="me", methods={"GET"})
+     */
+    public function me(SessionAuth $sessionAuth): JsonResponse
+    {
+        $user = $sessionAuth->getUser();
+        if ($user === null) {
+            return new JsonResponse(['authenticated' => false], 200);
+        }
+
+        return new JsonResponse([
+            'authenticated' => true,
+            'name' => $user->getName(),
+            'balance' => $user->getBalance(),
+        ], 200);
+    }
+
+    /**
+     * @Route("/logout", name="logout", methods={"POST"})
+     */
+    public function logout(SessionAuth $sessionAuth): JsonResponse
+    {
+        $sessionAuth->logout();
+
+        return new JsonResponse(['message' => 'logged out'], 200);
     }
     /**
      * @Route("/availableBets", name="availableBets", methods={"GET"})
@@ -246,10 +283,18 @@ class MainController extends AbstractController
     /**
      * @Route("/acceptBet", name="acceptBet", methods={"POST"})
      */
-    public function acceptBet(Request $request, EntityManagerInterface $entityManager)
+    public function acceptBet(Request $request, EntityManagerInterface $entityManager, SessionAuth $sessionAuth)
     {
+        $user = $sessionAuth->getUser();
+        if ($user === null) {
+            return new JsonResponse(['message' => 'Non authentifié'], 401);
+        }
 
         $data = json_decode($request->getContent(), true);
+        if (!is_array($data) || empty($data['id']) || empty($data['startDate']) || empty($data['startTime'])) {
+            return new JsonResponse(['message' => 'Pari invalide'], 400);
+        }
+
         $today = getdate();
 
         $day = $today['mday'];
@@ -265,14 +310,13 @@ class MainController extends AbstractController
 
 
                 $betRepository = $entityManager->getRepository(Bet::class);
-                $userRepository = $entityManager->getRepository(User::class);
-                $user = $userRepository->findBy(
-                    ['name' => $data['user']]
-                );
-                $balance = $user[0]->getBalance();
+                $balance = $user->getBalance();
 
                 $id = $data['id'];
                 $originalBet = $betRepository->find($id);
+                if ($originalBet === null) {
+                    return new JsonResponse(['message' => 'Pari introuvable'], 404);
+                }
                 $originalBet->setStatus('accepted');
                 $bet = new Bet();
 
@@ -284,25 +328,25 @@ class MainController extends AbstractController
                 } else {
                     $homeOrAway = 0;
                 }
-                $bet->setUsername($data['user']);
+                $bet->setUsername($user->getName());
                 $bet->setOdd($odd);
                 $bet->setStartTime($data['startTime']);
                 $bet->setStartDate($data['startDate']);
-                $bet->setBetType($data['type']);
-                $bet->setBetTypeValue($data['typeValue']);
+                $bet->setBetType($data['type'] ?? null);
+                $bet->setBetTypeValue($data['typeValue'] ?? null);
                 $bet->setHomeOrAway($homeOrAway);
                 $bet->setGame($game);
                 $bet->setGameId($originalBet->getGameId());
                 $bet->setStatus('accepted');
                 $bet->setAmount($amount);
-                $user[0]->setBalance($balance - $amount);
+                $user->setBalance($balance - $amount);
 
 
 
                 // Persist and flush the user to the database
 
                 $entityManager->persist($bet);
-                $entityManager->persist($user[0]);
+                $entityManager->persist($user);
 
 
                 $entityManager->persist($originalBet);
@@ -310,10 +354,9 @@ class MainController extends AbstractController
 
                 return new JsonResponse(['message' => 'Pari enregistré'], 200);
             }
-        } else {
-            return new JsonResponse(['message' => 'Le pari n\'est plus disponible '], 200);
         }
 
+        return new JsonResponse(['message' => 'Le pari n\'est plus disponible '], 200);
     }
 
 
@@ -345,11 +388,14 @@ class MainController extends AbstractController
     {
         $userRepository = $entityManager->getRepository(User::class);
 
-        $user = $userRepository->findby(
+        $foundUser = $userRepository->findOneBy(
             ['name' => $user]
         );
+        if ($foundUser === null) {
+            return new JsonResponse(0);
+        }
 
-        $data = $user[0]->getBalance();
+        $data = $foundUser->getBalance();
         $response = new JsonResponse($data);
         return $response;
     }
@@ -397,15 +443,20 @@ class MainController extends AbstractController
     /**
      * @Route("/bet", name="bet", methods={"POST"})
      */
-    public function bet(Request $request, EntityManagerInterface $entityManager)
+    public function bet(Request $request, EntityManagerInterface $entityManager, SessionAuth $sessionAuth)
     {
+        $user = $sessionAuth->getUser();
+        if ($user === null) {
+            return new JsonResponse(['message' => 'Non authentifié'], 401);
+        }
+
         $data = json_decode($request->getContent(), true);
-        if (!is_array($data) || empty($data['user']) || !isset($data['betAmount'])) {
+        if (!is_array($data) || !isset($data['betAmount'])) {
             return new JsonResponse(['message' => 'Pari invalide'], 400);
         }
 
         $bet = new Bet();
-        $bet->setUsername($data['user']);
+        $bet->setUsername($user->getName()); // identité issue de la session, jamais du corps de la requête
         $bet->setOdd($data['odd']);
         $bet->setHomeOrAway($data['team']);
         $bet->setGame($data['game']);
@@ -424,11 +475,6 @@ class MainController extends AbstractController
             $bet->setPlayerId($data['playerId']);
         }
 
-        $userRepository = $entityManager->getRepository(User::class);
-        $user = $userRepository->findOneBy(['name' => $data['user']]);
-        if ($user === null) {
-            return new JsonResponse(['message' => 'Utilisateur inconnu'], 404);
-        }
         $balance = $user->getBalance();
 
         // Persist and flush the user to the database
@@ -471,18 +517,6 @@ class MainController extends AbstractController
         return $response;
     }
 
-
-    /**
-     * @Route("/check", name="check")
-     */
-    public function check(BetManager $betManager, EntityManagerInterface $entityManager)
-    {
-        $betRepository = $entityManager->getRepository(Bet::class);
-        $userRepository = $entityManager->getRepository(User::class);
-        $betManager->checkGames($betRepository, $userRepository, $entityManager);
-        $response = new JsonResponse('done');
-        return $response;
-    }
 
     /**
      * @Route("/playersStats/{teamId}/{lastNgames}/{homeOrAway}/{winLose}/{vsMatchup}/{paceAdjust}/{seasonType}", name="playersStats")

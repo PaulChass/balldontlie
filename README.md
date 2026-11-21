@@ -100,7 +100,7 @@ symfony serve   # ou `php -S localhost:8000 -t public`
 
 ```bash
 # Résoudre les paris en attente/acceptés depuis les résultats NBA
-# (à planifier via cron plutôt que d'appeler la route HTTP /check)
+# (à planifier via cron ; l'ancienne route HTTP ouverte /check a été supprimée)
 php bin/console app:bets:check
 
 # Tests unitaires
@@ -117,18 +117,41 @@ vendor/bin/phpunit --testsuite unit
 
 ---
 
+## 🔐 Authentification
+
+L'identité de l'utilisateur est portée par une **session serveur** (cookie `HttpOnly`,
+`SameSite=Lax`), jamais déduite du corps de la requête :
+
+- `/signin` et `/register` ouvrent la session après vérification du mot de passe.
+- `/me` renvoie l'utilisateur courant (le front restaure la session au chargement) ;
+  `/logout` la ferme.
+- Les routes mutantes (`/bet`, `/acceptBet`) exigent une session et prennent le pseudo
+  de la session, pas celui envoyé par le client (`401` sinon).
+- Le `SameSite=Lax` fournit une protection CSRF de base pour ces requêtes same-origin.
+
+---
+
 ## 🚀 Déploiement & rollback
 
-Le serveur suit `origin/master` :
+Le serveur suit `origin/master`. Le **back** se déploie par `git pull` ; le **front**
+(bundle `public/build/`, hors git) se met à jour par un build local puis upload FTP de
+`app.js` / `app.css`.
 
 ```bash
-# Déployer
+# Déployer le back (sécurité, API)
 git pull origin master
+php bin/console cache:clear        # recharge les routes / la config
+
+# Mettre à jour le front (optionnel, pour les évolutions d'interface)
+npm run build                      # en local, puis FTP de public/build/app.js et app.css
 
 # Revenir à un palier précédent (tags posés à chaque lot)
 git fetch --tags
-git reset --hard lot-3            # ou baseline-pre-refactor pour l'état d'origine
+git reset --hard lot-5            # ou baseline-pre-refactor pour l'état d'origine
 ```
+
+> La sécurité du Lot 6 vit côté serveur : elle s'applique dès le `git pull` + `cache:clear`,
+> même si le bundle front n'est pas encore réuploadé.
 
 ---
 
