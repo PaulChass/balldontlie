@@ -10,6 +10,7 @@
  * the estimated token cost of the run.
  */
 import { runAgent } from "./agent.js";
+import { loadAnthropicEnv } from "./loadEnv.js";
 import { McpBridge } from "./mcpBridge.js";
 import { resolveModel } from "./models.js";
 
@@ -44,6 +45,7 @@ function fmtUsd(n: number): string {
 }
 
 async function main(): Promise<void> {
+  loadAnthropicEnv(); // pick up ANTHROPIC_* from the project .env if not already set
   const args = parseArgs(process.argv.slice(2));
 
   if (!args.question) {
