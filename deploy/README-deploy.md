@@ -49,11 +49,53 @@ Sur le serveur :
 git fetch --tags && git reset --hard lot-6 && php bin/console cache:clear --env=prod
 ```
 
-## Aller plus loin (optionnel) : déploiement automatique en CI
+## Déploiement automatique en CI (sans aucune action manuelle)
 
-Pour un déploiement **sans aucune action manuelle** (à chaque merge sur `master`),
-un workflow GitHub Actions peut builder puis déployer via SSH. Les secrets
-(`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `DEPLOY_PATH`) se mettent alors dans
-**GitHub → Settings → Secrets and variables → Actions**, jamais dans le dépôt ni
-dans `.env`. À noter : cela déploierait automatiquement chaque changement mergé —
-à n'activer que si tu veux abandonner le contrôle manuel du moment du déploiement.
+Le workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) build le
+front puis déploie via SSH **à chaque merge sur `master`** (et à la demande, via
+« Run workflow »). Rien à faire une fois configuré.
+
+### 1. Environnement GitHub
+
+Le workflow cible un environnement nommé **`production`** (clé `environment: production`).
+Crée-le dans **Settings → Environments** avec ce nom exact (ou renomme-le ainsi).
+
+### 2. Clé SSH dédiée
+
+Génère une paire **dédiée au déploiement** (ne réutilise pas ta clé perso) :
+
+```powershell
+ssh-keygen -t ed25519 -f deploy_key -N '""'
+```
+
+Ajoute la **clé publique** (`deploy_key.pub`) dans `~/.ssh/authorized_keys` sur le serveur.
+La **clé privée** (`deploy_key`, tout le contenu) ira dans le secret `SSH_PRIVATE_KEY`.
+
+### 3. Secrets & variables de l'environnement `production`
+
+Dans l'environnement, section **Environment secrets** :
+
+| Nom | Valeur |
+| --- | --- |
+| `SSH_HOST` | IP ou domaine du serveur |
+| `SSH_USER` | utilisateur SSH |
+| `SSH_PRIVATE_KEY` | contenu **entier** de la clé privée `deploy_key` |
+| `DEPLOY_PATH` | chemin absolu du dépôt sur le serveur (ex. `/var/www/balldontlie`) |
+
+Section **Environment variables** (optionnel) :
+
+| Nom | Valeur |
+| --- | --- |
+| `SSH_PORT` | port SSH si différent de `22` |
+
+Aucun de ces éléments ne vit dans le dépôt ni dans `.env`.
+
+### Garde-fou (optionnel)
+
+Comme chaque merge sur `master` déclenche un déploiement, tu peux ajouter une
+**Required reviewer** sur l'environnement `production` : le build se lance, mais le
+déploiement attend ton clic de validation. Bon compromis entre automatisation et
+contrôle du moment.
+
+> Le script local [`deploy.ps1`](deploy.ps1) reste utilisable en parallèle (déploiement
+> manuel ponctuel). Les deux voies peuvent coexister.
