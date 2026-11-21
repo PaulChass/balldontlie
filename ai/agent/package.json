@@ -1,0 +1,26 @@
+{
+  "name": "balldontlie-nba-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A grounded NBA stats agent: answers natural-language questions by calling the balldontlie MCP tools and reporting only numbers that trace back to a tool result.",
+  "bin": {
+    "nba-agent": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "ask": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "bridge-check": "tsx scripts/bridge-check.ts",
+    "loop-check": "tsx scripts/loop-check.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "@modelcontextprotocol/client": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
