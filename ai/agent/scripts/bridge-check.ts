@@ -57,6 +57,14 @@ try {
   assert.ok(resolved.text.includes("1610612744"), "resolve_team should return the Warriors id");
   console.error("✓ resolve_team round-trip (local, no API key)");
 
+  // The tool cache: an identical call is served from cache, not re-run.
+  const before = bridge.getCacheStats().hits;
+  const again = await bridge.callTool("resolve_team", { query: "Warriors", response_format: "json" });
+  const after = bridge.getCacheStats().hits;
+  assert.equal(after, before + 1, "identical tool call should be a cache hit");
+  assert.equal(again.text, resolved.text, "cached result should match the first");
+  console.error("✓ identical call served from cache");
+
   // A live-data call is a soft check (a sandbox may not reach stats.nba.com).
   try {
     const live = await bridge.callTool("get_tonight_games", { day_offset: 0, response_format: "json" });

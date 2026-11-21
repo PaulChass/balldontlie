@@ -40,14 +40,51 @@ function defaultServerEntry(): string {
   return fileURLToPath(new URL("../../mcp-server/dist/index.js", import.meta.url));
 }
 
+interface CacheEntry {
+  text: string;
+  isError: boolean;
+  expiry: number;
+}
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  size: number;
+}
+
+/** Deterministic cache key: tool name + its arguments with keys sorted. */
+function cacheKey(name: string, input: Record<string, unknown>): string {
+  const sorted = Object.keys(input)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, k) => {
+      acc[k] = input[k];
+      return acc;
+    }, {});
+  return `${name}\u0000${JSON.stringify(sorted)}`;
+}
+
 export class McpBridge {
   private client: Client;
   private connected = false;
   private readonly serverEntry: string;
+  private readonly cacheTtlMs: number;
+  private readonly cache = new Map<string, CacheEntry>();
+  private hits = 0;
+  private misses = 0;
 
-  constructor(serverEntry?: string) {
-    this.serverEntry = serverEntry ?? defaultServerEntry();
+  /**
+   * @param options.cacheTtlMs TTL for identical tool calls (default 60s). Cuts
+   *   repeated NBA API latency and cost within and across agent runs. Set 0 to
+   *   disable. Only successful results are cached; errors always re-run.
+   */
+  constructor(options: { serverEntry?: string; cacheTtlMs?: number } = {}) {
+    this.serverEntry = options.serverEntry ?? defaultServerEntry();
+    this.cacheTtlMs = options.cacheTtlMs ?? 60_000;
     this.client = new Client({ name: "balldontlie-nba-agent", version: "0.1.0" });
+  }
+
+  getCacheStats(): CacheStats {
+    return { hits: this.hits, misses: this.misses, size: this.cache.size };
   }
 
   async connect(): Promise<void> {
@@ -77,6 +114,16 @@ export class McpBridge {
     name: string,
     input: Record<string, unknown>,
   ): Promise<{ text: string; isError: boolean }> {
+    const key = cacheKey(name, input);
+    if (this.cacheTtlMs > 0) {
+      const cached = this.cache.get(key);
+      if (cached && cached.expiry > Date.now()) {
+        this.hits++;
+        return { text: cached.text, isError: cached.isError };
+      }
+    }
+
+    this.misses++;
     const result = (await this.client.callTool({
       name,
       arguments: input,
@@ -85,7 +132,13 @@ export class McpBridge {
       .map((c) => (typeof c.text === "string" ? c.text : ""))
       .filter(Boolean)
       .join("\n");
-    return { text, isError: result.isError === true };
+    const isError = result.isError === true;
+
+    // Cache only successful results; a transient error should be retried.
+    if (this.cacheTtlMs > 0 && !isError) {
+      this.cache.set(key, { text, isError, expiry: Date.now() + this.cacheTtlMs });
+    }
+    return { text, isError };
   }
 
   async close(): Promise<void> {

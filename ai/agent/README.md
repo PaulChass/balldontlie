@@ -43,9 +43,10 @@ Each run prints the answer followed by a trace of the tools called and the **est
 The hardest part — the MCP ↔ Anthropic integration — is testable offline:
 
 ```bash
-npm run bridge-check     # spawns the server, lists & maps 9 tools, runs a real tool call
+npm run bridge-check     # spawns the server, lists & maps 9 tools, real tool call + cache hit
 npm run loop-check       # runs the full agent loop against a stubbed model
 npm run grounding-check  # unit-tests the factuality checker on crafted inputs
+npm run router-check     # locks the routing policy to expected decisions
 ```
 
 Only the real model call needs a key; it is standard SDK usage.
@@ -81,14 +82,44 @@ output, so the strict checker would flag it. Golden cases query literal figures
 for that reason. Automatically checking derived aggregates (or adding a stats
 tool that returns averages) is a noted next step.
 
-## Model & cost
+## Routing & cost (pillar 4)
 
-The model is a parameter ([src/models.ts](src/models.ts)) with the pricing table attached, so each run reports an honest `$` estimate and the cost-routing pillar is a one-line switch:
+The model is chosen automatically by a **deterministic complexity router**
+([src/router.ts](src/router.ts)) — an explainable policy, no black box, no extra
+LLM call. It picks the cheapest model that can do the job:
 
-| Alias | Model | $/1M in | $/1M out | Intended role |
-|-------|-------|---------|----------|---------------|
-| `opus` (default) | `claude-opus-5-5` | $4 | $20 | multi-step reasoning |
-| `sonnet` | `claude-sonnet-5-5` | $2 | $10 | mid-tier |
-| `haiku` | `claude-haiku-5-5` | $0.10 | $0.50 | light single-tool lookups |
+| Tier | Model | $/1M in | $/1M out | When |
+|------|-------|---------|----------|------|
+| light | `claude-haiku-5-5` | $0.10 | $0.50 | single lookup (who plays, injuries, a score, an id) |
+| standard | `claude-sonnet-5-5` | $2 | $10 | single-entity stat (a team's record, a player's line) |
+| heavy | `claude-opus-5-5` | $4 | $20 | comparison, preview, "why", multi-step analysis |
 
-Prices are Anthropic first-party rates (claude-api reference, 2026-11-03 snapshot). Automatic model routing by question complexity is the next milestone (cost & routing pillar); today you pick the model per run.
+Ambiguous questions default to Sonnet — never Haiku — so routing never
+under-serves a hard question to save a cent. `--model opus|sonnet|haiku`
+forces one; prices are Anthropic first-party rates (claude-api, 2026-11-03).
+
+Every run reports model + routing reasons, latency, token cost, the cost the
+**same run would have had on all-Opus**, and tool-cache hits:
+
+```
+— routed → Haiku 5.5 (light:schedule) · 2 turn(s) · 3.2s · tools: get_tonight_games
+  tokens: 11270 in / 360 out · est. cost $0.00131 · all-Opus $0.05228 → saved 97%
+  tool-cache: 0 hit / 1 miss
+```
+
+**Tool cache.** [src/mcpBridge.ts](src/mcpBridge.ts) memoises identical tool
+calls for a TTL (60s, `--no-cache` to disable), cutting repeated NBA API latency
+and cost. Hits require identical arguments, so cross-question reuse is
+opportunistic (the model often rephrases a query); the mechanism is proven
+deterministically in `bridge-check`.
+
+**Benchmark** the policy end-to-end (live):
+
+```bash
+npm run bench        # representative mix; prints a table + routed-vs-all-Opus savings
+```
+
+A sample run routed 5 questions for **$0.17 vs $0.38 on all-Opus — 57% saved**,
+with light lookups at ~$0.0013 each instead of ~$0.05. (Numbers vary with the
+live slate; the all-Opus figure reprices the same token counts, so it is an
+estimate.)
