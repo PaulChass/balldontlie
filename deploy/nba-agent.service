@@ -1,0 +1,36 @@
+# systemd unit for the NBA agent service (backend of the /assistant web surface).
+#
+# Install (one-time, on the server, as root):
+#   1. Adjust WorkingDirectory / ExecStart below to your paths (check: `which node`).
+#   2. sudo cp deploy/nba-agent.service /etc/systemd/system/nba-agent.service
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now nba-agent
+#   5. curl -s http://127.0.0.1:8787/health   # -> {"ok":true,"tools":9,"credentials":true}
+#
+# The service reads ANTHROPIC_API_KEY itself: loadAnthropicEnv() walks up from
+# ai/agent to the project root and picks it up from the same .env the PHP app
+# uses — so no key is written into this unit. If your .env lives elsewhere, add
+#   EnvironmentFile=/path/to/env-with-ANTHROPIC_API_KEY
+# (a file of KEY=VALUE lines) instead.
+
+[Unit]
+Description=balldontlie NBA agent service (AI web surface backend)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/balldontlie/ai/agent
+Environment=NBA_AGENT_PORT=8787
+# `which node` may return a different path (nvm, /usr/local/bin, ...). Use an
+# absolute path here — systemd does not read your shell PATH.
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=3
+# Run as the same user as the web server so it can reach the project .env.
+User=www-data
+Group=www-data
+# Bound to 127.0.0.1 in code; never exposed publicly.
+
+[Install]
+WantedBy=multi-user.target
