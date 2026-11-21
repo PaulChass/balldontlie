@@ -203,10 +203,19 @@ class MatchsDeLaNuit
             return $this->scheduleCache;
         }
 
+        // cdn.nba.com (Akamai) renvoie 403 sans en-tête User-Agent navigateur :
+        // sans lui, getJson() reçoit un 403, renvoie null, et la page d'accueil
+        // se retrouve sans matchs. L'ancien cookie Akamai codé en dur (2021) était
+        // expiré et inutile.
         $this->scheduleCache = $this->nbaClient->getJsonCached(
             'nba_schedule_league_v2',
             'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json',
-            ['Cookie: akacd_data_nba_net_ems=1616059329~rv=14~id=f99c4dca08f89687c039a759f2256383'],
+            [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept: application/json, text/plain, */*',
+                'Origin: https://www.nba.com',
+                'Referer: https://www.nba.com/',
+            ],
             60
         );
 
