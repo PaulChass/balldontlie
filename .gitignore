@@ -30,3 +30,15 @@ yarn-error.log
 .phpunit.result.cache
 /phpunit.xml
 ###< symfony/phpunit-bridge ###
+
+###> projet : artefacts à ne jamais committer ###
+# Binaire CLI Symfony (à installer localement, pas dans le dépôt)
+/symfony.exe
+# Bundles front compilés égarés à la racine (le build va dans public/build/)
+/app.js
+/app.css
+# Cache PHPUnit 10
+/.phpunit.cache/
+# Config de déploiement : identifiants/chemins SSH, jamais committés
+/deploy/deploy.config.ps1
+###< projet ###
