@@ -37,4 +37,6 @@ yarn-error.log
 # Bundles front compilés égarés à la racine (le build va dans public/build/)
 /app.js
 /app.css
+# Cache PHPUnit 10
+/.phpunit.cache/
 ###< projet ###
