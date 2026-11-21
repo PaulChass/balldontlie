@@ -17,6 +17,7 @@ use App\Services\StatsManager;
 use App\Entity\User;
 use App\Entity\Bet;
 use App\Entity\Comment;
+use App\Security\LegacyPasswordHasher;
 
 
 class MainController extends AbstractController
@@ -71,10 +72,16 @@ class MainController extends AbstractController
     public function comment(Request $request, EntityManagerInterface $entityManager)
     {
         $data = json_decode($request->getContent(), true);
+        if (!is_array($data) || !isset($data['gameId']) || empty($data['message'])) {
+            return new JsonResponse(['message' => 'Commentaire invalide'], 400);
+        }
 
         $comment = new Comment();
-        if($data['user']==''){$comment->setUsername('anon'.$data['randomId']);}else{
-        $comment->setUsername($data['user']);}
+        if (($data['user'] ?? '') == '') {
+            $comment->setUsername('anon' . ($data['randomId'] ?? ''));
+        } else {
+            $comment->setUsername($data['user']);
+        }
         $comment->setGameId($data['gameId']);
         $comment->setMessage($data['message']);
         
@@ -112,33 +119,36 @@ class MainController extends AbstractController
     /**
      * @Route("/register", name="registration", methods={"POST"})
      */
-    public function register(Request $request, EntityManagerInterface $entityManager)
+    public function register(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher)
     {
         $data = json_decode($request->getContent(), true);
+        if (!is_array($data) || empty($data['name']) || empty($data['email']) || empty($data['password'])) {
+            return new JsonResponse(['message' => 'Données d\'inscription incomplètes'], 200);
+        }
+
+        $userRepository = $entityManager->getRepository(User::class);
+
+        if ($userRepository->findOneBy(['name' => $data['name']]) !== null) {
+            return new JsonResponse(['message' => 'Ce nom d\'utilisateur est déja pris'], 200);
+        }
+
+        $existingByMail = $userRepository->findOneBy(['email' => $data['email']]);
+        if ($existingByMail !== null) {
+            if ($passwordHasher->verify($existingByMail, $data['password'])) {
+                $entityManager->flush(); // persiste une éventuelle migration du hash hérité
+                return new JsonResponse(['message' => 'Registration successful'], 200);
+            }
+            return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
+        }
+
         $user = new User();
         $user->setName($data['name']);
         $user->setEmail($data['email']);
-        $user->setPassword($data['password']);
+        $user->setPassword($passwordHasher->hash($data['password']));
         $user->setBalance(100);
-        $userRepository = $entityManager->getRepository(User::class);
-        $userName = $userRepository->findBy(['name' => $data['name']]);
-        $userMail = $userRepository->findBy(['email' => $data['email']]);
-        if (isset($userName[0])) {
-            return new JsonResponse(['message' => 'Ce nom d\'utilisateur est déja pris'], 200);
-        }
-        if (isset($userMail[0])) {
-            if ($userMail[0]->getPassword() === $data['password']) {
-                return new JsonResponse(['message' => 'Registration successful'], 200);
-            } else {
-                return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
-            }
-        }
-        // Persist and flush the user to the database
 
         $entityManager->persist($user);
         $entityManager->flush();
-
-
 
         return new JsonResponse(['message' => 'Registration successful'], 200);
     }
@@ -147,29 +157,33 @@ class MainController extends AbstractController
     /**
      * @Route("/signin", name="signin", methods={"POST"})
      */
-    public function signIn(Request $request, EntityManagerInterface $entityManager)
+    public function signIn(Request $request, EntityManagerInterface $entityManager, LegacyPasswordHasher $passwordHasher)
     {
         $data = json_decode($request->getContent(), true);
+        if (!is_array($data) || empty($data['password']) || (empty($data['name']) && empty($data['email']))) {
+            return new JsonResponse(['message' => 'Identifiants incomplets'], 200);
+        }
+
         $userRepository = $entityManager->getRepository(User::class);
-        $userName = $userRepository->findBy(['name' => $data['name']]);
-        $userMail = $userRepository->findBy(['email' => $data['email']]);
-        $isName = isset($userName[0]);
-        $isMail = isset($userMail[0]);
-        if ($isName) {
-            if ($userName[0]->getPassword() === $data['password']) {
-                return new JsonResponse(['message' => 'Registration successful'], 200);
-            } else {
-                return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
-            }
-        } elseif ($isMail) {
-            if ($userMail[0]->getPassword() === $data['password']) {
-                return new JsonResponse(['message' => 'Registration successful'], 200);
-            } else {
-                return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
-            }
-        } else {
+
+        $user = null;
+        if (!empty($data['name'])) {
+            $user = $userRepository->findOneBy(['name' => $data['name']]);
+        }
+        if ($user === null && !empty($data['email'])) {
+            $user = $userRepository->findOneBy(['email' => $data['email']]);
+        }
+
+        if ($user === null) {
             return new JsonResponse(['message' => 'Ce nom d\'utilisateur / adresse email n\'est pas reconnu'], 200);
         }
+
+        if ($passwordHasher->verify($user, $data['password'])) {
+            $entityManager->flush(); // persiste une éventuelle migration du hash hérité
+            return new JsonResponse(['message' => 'Registration successful'], 200);
+        }
+
+        return new JsonResponse(['message' => 'Mot de passe incorect '], 200);
     }
     /**
      * @Route("/availableBets", name="availableBets", methods={"GET"})
@@ -411,6 +425,10 @@ class MainController extends AbstractController
     public function bet(Request $request, EntityManagerInterface $entityManager)
     {
         $data = json_decode($request->getContent(), true);
+        if (!is_array($data) || empty($data['user']) || !isset($data['betAmount'])) {
+            return new JsonResponse(['message' => 'Pari invalide'], 400);
+        }
+
         $bet = new Bet();
         $bet->setUsername($data['user']);
         $bet->setOdd($data['odd']);
@@ -432,15 +450,16 @@ class MainController extends AbstractController
         }
 
         $userRepository = $entityManager->getRepository(User::class);
-        $user = $userRepository->findBy(
-            ['name' => $data['user']]
-        );
-        $balance = $user[0]->getBalance();
+        $user = $userRepository->findOneBy(['name' => $data['user']]);
+        if ($user === null) {
+            return new JsonResponse(['message' => 'Utilisateur inconnu'], 404);
+        }
+        $balance = $user->getBalance();
 
         // Persist and flush the user to the database
-        $user[0]->setBalance($balance - $data['betAmount']);
+        $user->setBalance($balance - $data['betAmount']);
         $entityManager->persist($bet);
-        $entityManager->persist($user[0]);
+        $entityManager->persist($user);
         $entityManager->flush();
 
 
