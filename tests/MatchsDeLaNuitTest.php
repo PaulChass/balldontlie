@@ -4,6 +4,7 @@ namespace App\Tests;
 
 use PHPUnit\Framework\TestCase;
 use App\Services\MatchsDeLaNuit;
+use App\Nba\NbaClient;
 use ReflectionClass;
 
 class MatchsDeLaNuitTest extends TestCase
@@ -11,7 +12,7 @@ class MatchsDeLaNuitTest extends TestCase
     public function testScheduleReturnsObject(): void
     {
         // Create an instance of the MatchsDeLaNuit class
-        $service = new MatchsDeLaNuit();
+        $service = new MatchsDeLaNuit(new NbaClient());
 
         // Use reflection to access the protected method
         $reflection = new ReflectionClass($service);
@@ -28,7 +29,7 @@ class MatchsDeLaNuitTest extends TestCase
     public function testIsSameDateReturnsFalse(): void
     {
         // Create an instance of the MatchsDeLaNuit class
-        $service = new MatchsDeLaNuit();
+        $service = new MatchsDeLaNuit(new NbaClient());
 
         // Use reflection to access the protected method
         $reflection = new ReflectionClass($service);
@@ -44,7 +45,7 @@ class MatchsDeLaNuitTest extends TestCase
     public function testProcessGameReturnsArray(): void
     {
         // Create an instance of the MatchsDeLaNuit class
-        $service = new MatchsDeLaNuit();
+        $service = new MatchsDeLaNuit(new NbaClient());
 
         // Use reflection to access the protected method
         $reflection = new ReflectionClass($service);

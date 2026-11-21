@@ -80,7 +80,7 @@ class StatsManager
         $i = 0;
         
         $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
-        while ($teamStatsId[0][$i][0] != $teamId) {
+        while (isset($teamStatsId[0][$i]) && $teamStatsId[0][$i][0] != $teamId) {
             $i++;
         }
 
@@ -132,7 +132,7 @@ class StatsManager
     public function returnDefenseStats($teamId, $teamsStats){
         $i = 0;
         $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
-        while ($teamStatsId[0][$i][0] != $teamId) {
+        while (isset($teamStatsId[0][$i]) && $teamStatsId[0][$i][0] != $teamId) {
             $i++;
         }
         $stats['Team'] = $teamStatsId[0][$i][1];
@@ -152,7 +152,7 @@ class StatsManager
     public function returnAdvancedStats($teamId, $teamsStats){
         $i = 0;
         $teamStatsId[] = $teamsStats->resultSets[0]->rowSet;
-        while ($teamStatsId[0][$i][0] != $teamId) {
+        while (isset($teamStatsId[0][$i]) && $teamStatsId[0][$i][0] != $teamId) {
             $i++;
         }
         $stats['OFF_RATING'] = $teamStatsId[0][$i][8];
@@ -178,7 +178,7 @@ class StatsManager
        
         
         $i=0;
-        while ($playerStats->resultSets[0]->rowSet[$i][3] !=$id) {
+        while (isset($playerStats->resultSets[0]->rowSet[$i]) && $playerStats->resultSets[0]->rowSet[$i][3] !=$id) {
             $i++;
         }
         return $playerStats->resultSets[0]->rowSet[$i][4];
@@ -236,7 +236,8 @@ class StatsManager
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 10000,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
@@ -274,7 +275,8 @@ class StatsManager
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 8000,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'GET',
@@ -368,7 +370,8 @@ class StatsManager
           CURLOPT_RETURNTRANSFER => true,
           CURLOPT_ENCODING => '',
           CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
+          CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
           CURLOPT_FOLLOWLOCATION => true,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => 'GET',
@@ -444,7 +447,8 @@ class StatsManager
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'GET',
@@ -488,7 +492,8 @@ class StatsManager
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
