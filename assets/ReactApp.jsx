@@ -44,6 +44,33 @@ function ReactApp(data) {
       .catch(error => console.error('Error fetching data:', error));
   }
 
+  // Restaure la session au chargement (le cookie HttpOnly est posé côté serveur au login).
+  // Corrige la déconnexion au rafraîchissement : l'identité ne vit plus seulement dans l'état React.
+  useEffect(() => {
+    fetch('/index.php/me')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.authenticated) {
+          setUser(data.name);
+          setRegistered('Registration successful');
+          setBalance(data.balance);
+        }
+      })
+      .catch(error => console.error('Error restoring session:', error));
+  }, []);
+
+  // Déconnexion : détruit la session serveur puis vide l'état local.
+  function logout() {
+    fetch('/index.php/logout', { method: 'POST' })
+      .catch(error => console.error('Error logging out:', error))
+      .finally(() => {
+        setUser('');
+        setRegistered('');
+        setBalance('');
+        setMenuItem(0);
+      });
+  }
+
 
 
   var teams = [0, 0];
@@ -95,7 +122,7 @@ function ReactApp(data) {
       <span>{user !== '' && getBalance(user)}</span>
 
       <div style={{ display: gameNumber !== -1 ? 'block' : 'none',minHeight:'75vh', marginBottom:'5rem' }}>
-        <Navbar teams={teams} gameNumber={gameNumber} gameId={gameId} registered={registered} setRegistered={setRegistered} user={user} setUser={setUser} hTeamName={hTeamName} aTeamName={aTeamName} menuItem={menuItem} setMenuItem={setMenuItem} it={it} balance={balance} setBalance={setBalance} setShowSignIn={setShowSignIn} showSignIn={showSignIn} />
+        <Navbar teams={teams} gameNumber={gameNumber} gameId={gameId} registered={registered} setRegistered={setRegistered} user={user} setUser={setUser} hTeamName={hTeamName} aTeamName={aTeamName} menuItem={menuItem} setMenuItem={setMenuItem} it={it} balance={balance} setBalance={setBalance} setShowSignIn={setShowSignIn} showSignIn={showSignIn} logout={logout} />
 
         <SignInForm registered={registered} setRegistered={setRegistered} user={user} setUser={setUser} menuItem={menuItem} setMenuItem={setMenuItem} setShowSignIn={setShowSignIn} showSignIn={showSignIn} />
         <div style={{ display: showSignIn ? 'none' : 'block' }}>

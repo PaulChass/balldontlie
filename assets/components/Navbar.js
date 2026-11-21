@@ -53,10 +53,11 @@ return ( <div><nav className="navbar navbar-expand-lg navbar-dark bg-dark">
   </ul>
 </div>
 <div className="navbar-text">
-  <span className="user-info">{props.user !== "" ? 
-    <span id="solde">{Number(props.balance).toFixed(2) }</span>: 
+  <span className="user-info">{props.user !== "" ?
+    <span id="solde">{Number(props.balance).toFixed(2) }</span>:
     <Registration teams={props.teams} gameNumber={props.gameNumber} gameId={props.gameId} registered={props.registered} setRegistered={props.setRegistered} user={props.user} setMenuItem={props.setMenuItem} menuItem={props.menuItem} />
 }</span>
+  {props.user !== "" && <span className="user-info"><button type="button" className="btn btn-sm btn-outline-light logout-btn" onClick={props.logout}>Déconnexion</button></span>}
   <span className="user-info"><SignIn teams={props.teams} gameNumber={props.gameNumber} gameId={props.gameId} registered={props.registered} setRegistered={props.setRegistered} user={props.user} hTeamName={props.hTeamName} aTeamName={props.aTeamName} setMenuItem={props.setMenuItem} menuItem={props.menuItem} setShowSignIn={props.setShowSignIn} showSignIn={props.showSignIn} />
 </span>
 </div>
