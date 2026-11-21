@@ -152,3 +152,66 @@ A sample run routed 5 questions for **$0.17 vs $0.38 on all-Opus — 57% saved**
 with light lookups at ~$0.0013 each instead of ~$0.05. (Numbers vary with the
 live slate; the all-Opus figure reprices the same token counts, so it is an
 estimate.)
+
+## Web surface (Symfony integration)
+
+The agent is also served over HTTP so the Symfony site can expose it on a page
+(`/assistant`): a **"pose ta question NBA"** bar (usage A) and **auto previews**
+of tonight's games (usage B).
+
+```
+browser ──▶ Symfony  (/api/nba/ask, /api/nba/previews)
+                 │   proxy: cache + per-IP throttle, holds no key
+                 ▼
+          Node agent service  (127.0.0.1:8787)  ◀── ANTHROPIC_API_KEY lives here
+                 │
+                 ▼
+          MCP server ──▶ stats.nba.com / cdn.nba.com
+```
+
+The browser only ever talks to Symfony. **The Anthropic API key stays in the
+Node process and never reaches the browser.** [src/server.ts](src/server.ts)
+reuses the exact same agent, router and preview code as the CLI — it is only a
+thin HTTP layer (one shared MCP bridge kept warm, agent runs serialised so a
+burst of visitors can't fan out into parallel model calls).
+
+| Method | Route | Does |
+|--------|-------|------|
+| GET | `/health` | liveness + MCP tool count + whether a key is set |
+| POST | `/ask` `{question}` | routed, grounded answer + model + cost + grounding |
+| GET | `/previews?day=0&limit=2` | grounded briefings for the slate (cached 1h) |
+
+### Run it locally
+
+```bash
+# 1. build the MCP server and the agent (once)
+cd ai/mcp-server && npm install && npm run build && cd -
+cd ai/agent && npm install && npm run build
+
+# 2. start the agent service (needs ANTHROPIC_API_KEY in the project .env)
+npm run serve            # → http://127.0.0.1:8787  (npm run serve:dev for tsx)
+
+# 3. build the site's front-end and serve Symfony (repo root)
+cd ../.. && yarn build   # compiles the `assistant` Encore entry
+symfony serve            # then open /assistant
+```
+
+The Symfony side is [AssistantController.php](../../src/Controller/AssistantController.php)
+(proxy + cache + throttle), the page `templates/assistant/index.html.twig`, and
+a React component `assets/components/Assistant.js` (Encore entry `assistant`). A
+"🤖 Assistant IA" link is added to every page via `base.html.twig`.
+
+- **Service URL** is configurable with the `NBA_AGENT_URL` env var (default
+  `http://127.0.0.1:8787`); set it in the project `.env` if the service runs
+  elsewhere.
+- **Cost guards**: `/ask` is throttled to 8 requests / IP / minute; previews run
+  on Opus but are cached in the Node service (1h) *and* in Symfony (55 min), so
+  a slate is generated at most once per hour.
+
+### Deploying (later, with explicit sign-off)
+
+Run the Node service as a daemon (systemd / pm2) bound to `127.0.0.1`, with
+`ANTHROPIC_API_KEY` in its environment. **Same data caveat as the PHP app:** the
+agent fetches from stats.nba.com / cdn.nba.com, so a server IP that Akamai blocks
+affects the agent too — resolve the schedule-source question before relying on
+live previews in production.

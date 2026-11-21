@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Assistant NBA — balldontlie{% endblock %}
+
+{% block stylesheets %}
+    {{ encore_entry_link_tags('assistant') }}
+{% endblock %}
+
+{% block body %}
+<div
+    id="assistantApp"
+    data-ask-url="{{ path('api_nba_ask') }}"
+    data-previews-url="{{ path('api_nba_previews') }}"
+></div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ encore_entry_script_tags('assistant') }}
+{% endblock %}

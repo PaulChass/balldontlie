@@ -11,6 +11,8 @@
     "build": "tsc",
     "ask": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
+    "serve": "node dist/server.js",
+    "serve:dev": "tsx src/server.ts",
     "bridge-check": "tsx scripts/bridge-check.ts",
     "loop-check": "tsx scripts/loop-check.ts",
     "grounding-check": "tsx scripts/grounding-check.ts",
