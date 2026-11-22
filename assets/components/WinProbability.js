@@ -27,22 +27,33 @@ function WinProbability(props) {
       "/" +
       props.teams[1];
     let alive = true;
-    fetch(url)
-      .then((r) => r.json())
-      .then((json) => {
-        if (!alive) return;
-        if (json && json.data && json.data.pHome !== undefined) {
-          setData(json.data);
-        } else {
-          setError("Estimation indisponible pour ce match.");
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setError("Estimation indisponible pour le moment.");
-        setLoading(false);
-      });
+    // L'estimation fait plusieurs appels NBA ; on réessaie en cas d'aléa réseau
+    // pour ne pas laisser un panneau vide sur un simple timeout passager.
+    const attempt = (triesLeft) =>
+      fetch(url)
+        .then((r) => r.json())
+        .then((json) => {
+          if (!alive) return;
+          if (json && json.data && json.data.pHome !== undefined) {
+            setData(json.data);
+            setLoading(false);
+          } else if (triesLeft > 0) {
+            setTimeout(() => alive && attempt(triesLeft - 1), 1200);
+          } else {
+            setError("Estimation indisponible pour ce match.");
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!alive) return;
+          if (triesLeft > 0) {
+            setTimeout(() => alive && attempt(triesLeft - 1), 1200);
+          } else {
+            setError("Estimation indisponible pour le moment.");
+            setLoading(false);
+          }
+        });
+    attempt(2);
     return () => {
       alive = false;
     };
