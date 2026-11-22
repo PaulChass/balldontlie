@@ -46,11 +46,13 @@ const PREVIEW_DEFAULT_LIMIT = 2;
 const PREVIEW_MAX_LIMIT = 6;
 
 // Model + effort for the auto previews — the single place to tune preview cost.
-// Opus is the validated default; dropping to Sonnet and/or a lower effort is a
-// cost lever. Flip here once the judge confirms quality holds:
-//   npm run preview -- --model sonnet --effort low --all
-const PREVIEW_MODEL = MODELS.opus;
-const PREVIEW_EFFORT: "low" | "medium" | "high" | "xhigh" | "max" | undefined = undefined;
+// Sonnet at medium effort: judged against the LLM judge on a 3-game sample it
+// matched the factuality contract (3/3 fully grounded, vs 2/3 for Opus) at a
+// PASS editorial grade (3/5 vs Opus 4/5) for ~57% less than cached Opus
+// (~$0.015 vs ~$0.036 per preview). Re-measure before changing:
+//   npm run preview -- --model sonnet --effort medium --all
+const PREVIEW_MODEL = MODELS.sonnet;
+const PREVIEW_EFFORT: "low" | "medium" | "high" | "xhigh" | "max" | undefined = "medium";
 
 let bridge: McpBridge;
 
