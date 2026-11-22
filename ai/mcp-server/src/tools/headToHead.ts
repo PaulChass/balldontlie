@@ -36,7 +36,17 @@ function brief(
 }
 
 function line(label: string, stats: TeamStatsResult["stats"]): string {
-  return `${label}: ${stats.W ?? "?"}-${stats.L ?? "?"}, ${stats.PTS ?? "?"} PTS, NET ${stats.NET_RATING ?? "n/a"}`;
+  // W/L/PTS come from the Base dashboard. NET_RATING/PACE are Advanced-only
+  // columns, so they are NOT read here — see advLine() for the advanced profile.
+  return `${label}: ${stats.W ?? "?"}-${stats.L ?? "?"}, ${stats.PTS ?? "?"} PTS`;
+}
+
+/** Advanced profile line, sourced from the Advanced dashboard (not Base). */
+function advLine(stats: TeamStatsResult["stats"]): string {
+  return (
+    `Advanced: NET ${stats.NET_RATING ?? "n/a"}, OFF ${stats.OFF_RATING ?? "n/a"}, ` +
+    `DEF ${stats.DEF_RATING ?? "n/a"}, PACE ${stats.PACE ?? "n/a"}`
+  );
 }
 
 export function registerHeadToHeadTools(server: McpServer): void {
@@ -138,10 +148,12 @@ Example:
         `## ${payload.home.team} (home)`,
         `- ${line("Season", hSeason.stats)}`,
         `- ${line(`Last ${args.recent_form_games}`, hForm.stats)}`,
+        `- ${advLine(hAdv.stats)}`,
         "",
         `## ${payload.away.team} (away)`,
         `- ${line("Season", aSeason.stats)}`,
         `- ${line(`Last ${args.recent_form_games}`, aForm.stats)}`,
+        `- ${advLine(aAdv.stats)}`,
         "",
         `## Head-to-head (${args.season})`,
         payload.headToHead.games === 0
