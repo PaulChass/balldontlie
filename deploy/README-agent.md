@@ -34,16 +34,16 @@ curl -s http://127.0.0.1:8787/health      # -> {"ok":true,"tools":9,"credentials
 
 ## À chaque déploiement
 
-Après `deploy.ps1` (qui met à jour le code back + front), si `ai/` a changé il
-faut rebuilder l'agent et le redémarrer :
+`deploy.ps1` s'en charge : son étape 4/4 rebuild le serveur MCP + l'agent et
+redémarre le service (`$DeployAgent = $true` par défaut). Rien à faire à la main.
+
+Si tu déploies sans le script, l'équivalent manuel sur le serveur est :
 
 ```bash
+cd /var/www/balldontlie/ai/mcp-server && npm ci && npm run build
 cd /var/www/balldontlie/ai/agent && npm ci && npm run build
 sudo systemctl restart nba-agent
 ```
-
-> On peut automatiser ce rebuild+restart en l'ajoutant aux étapes SSH de
-> `deploy.ps1`. À faire une fois le service validé à la main.
 
 ## Config côté PHP (optionnel)
 

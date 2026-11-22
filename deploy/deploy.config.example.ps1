@@ -21,3 +21,12 @@ $RemotePath = '/var/www/balldontlie'
 # Lancer `composer install --no-dev` sur le serveur à chaque déploiement
 # (utile seulement si tes dépendances PHP changent ; défaut : $false).
 # $RunComposer = $true
+
+# Rebuild + redémarrer le service Node de l'assistant IA sur le serveur
+# (serveur MCP + agent, puis `systemctl restart nba-agent`). Défaut : $true.
+# Mets $false si tu ne déploies pas l'IA. Prérequis : Node/nvm sur le serveur et
+# le service systemd installé (voir deploy/README-agent.md).
+# $DeployAgent = $false
+
+# Nom de l'unité systemd de l'agent (défaut : nba-agent).
+# $AgentService = 'nba-agent'
