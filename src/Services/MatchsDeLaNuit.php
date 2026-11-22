@@ -203,14 +203,23 @@ class MatchsDeLaNuit
             return $this->scheduleCache;
         }
 
+        // Le CDN NBA (Akamai) bloque désormais par 403 les requêtes dont l'User-Agent
+        // annonce un Chrome trop ancien et qui n'ont pas les en-têtes "Sec-Fetch-*" /
+        // "Accept-Language" d'un vrai navigateur. Depuis une IP datacenter (le VPS de prod)
+        // l'ancien User-Agent Chrome/120 renvoyait "Access Denied" → calendrier vide → aucun
+        // match affiché. Un User-Agent Chrome récent + ces en-têtes rétablissent la réponse 200.
         $this->scheduleCache = $this->nbaClient->getJsonCached(
             'nba_schedule_league_v2',
             'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json',
             [
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'Accept: application/json, text/plain, */*',
+                'Accept-Language: en-US,en;q=0.9',
                 'Origin: https://www.nba.com',
                 'Referer: https://www.nba.com/',
+                'Sec-Fetch-Site: cross-site',
+                'Sec-Fetch-Mode: cors',
+                'Sec-Fetch-Dest: empty',
             ],
             60
         );
