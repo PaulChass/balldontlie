@@ -39,6 +39,12 @@ class WinProbability
     /** Impact forfaitaire quand un blessé n'est pas retrouvé dans les stats joueurs. */
     public const INJURY_FALLBACK_POINTS = 6.0;
 
+    /**
+     * Gravité minimale prise en compte : en dessous (ex. « Probable »), le joueur
+     * est jugé susceptible de jouer, on l'ignore pour ne pas polluer l'estimation.
+     */
+    public const MIN_STATUS_WEIGHT = 0.3;
+
     private StatsManager $statsManager;
 
     public function __construct(StatsManager $statsManager)
@@ -156,7 +162,7 @@ class WinProbability
         foreach ($injuries as $inj) {
             $status = (string) ($inj['status'] ?? '');
             $weight = self::statusWeight($status);
-            if ($weight <= 0.0) {
+            if ($weight < self::MIN_STATUS_WEIGHT) {
                 continue; // Probable / disponible : on ignore.
             }
             $key = self::normalizeName((string) ($inj['player'] ?? ''));
