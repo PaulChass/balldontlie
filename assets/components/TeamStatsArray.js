@@ -4,6 +4,7 @@ import "../styles/TeamsStatsArray.css";
 import TeamsStatsButtonBar from "./TeamsStatsButtonBar";
 import Injuries from "./Injuries";
 import Simulation from "./Simulation";
+import WinProbability from "./WinProbability";
 import PlayersStats from "./PlayersStats";
 
 
@@ -597,6 +598,13 @@ function TeamsStatsArrays(props) {
       <h2 className="text-center text-white m-3 mt-4">
         {props.aTeamName}@{props.hTeamName}
       </h2>
+
+      <WinProbability
+        teams={props.teams}
+        hTeamName={props.hTeamName}
+        aTeamName={props.aTeamName}
+        bookmaker={simulated}
+      />
 
       <div className="m-3">
         <div
