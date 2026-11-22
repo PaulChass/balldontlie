@@ -45,6 +45,28 @@ function Landing() {
           ))}
         </div>
 
+        <div
+          className="mt-2 mb-4 p-4 mx-auto"
+          style={{
+            background: 'rgba(139, 69, 19, 0.28)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '0.75rem',
+            maxWidth: '680px',
+          }}
+        >
+          <div style={{ fontSize: '2rem' }}>🤖</div>
+          <h4 className="mt-1" style={{ fontWeight: 800 }}>Nouveau — l'Assistant IA NBA</h4>
+          <p style={{ opacity: 0.9, maxWidth: '620px', margin: '0.5rem auto 1rem' }}>
+            Pose n'importe quelle question NBA en langage naturel : l'agent interroge
+            les données en direct et ne cite que des chiffres tracés jusqu'à leur
+            source — jamais inventés. Il génère aussi les avant-matchs du soir,
+            analyse pure, chaque chiffre sourcé.
+          </p>
+          <a className="btn btn-light btn-lg" href="/assistant" style={{ fontWeight: 600 }}>
+            Découvrir l'assistant IA →
+          </a>
+        </div>
+
         <button className="btn btn-light btn-lg mt-2" style={{ fontWeight: 600 }} onClick={scrollToTop}>
           Voir les matchs du soir ↑
         </button>
