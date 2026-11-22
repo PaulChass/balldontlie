@@ -1,31 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import Dashboard from './Dashboard';
+import React from 'react';
 
-
+/**
+ * Bouton « Connexion » : ouvre/ferme le formulaire de connexion (SignInForm).
+ * L'état connecté est géré par la Navbar (nom + déconnexion).
+ */
 function SignIn(props) {
-
-  
- 
-  if(props.registered !=='Registration successful')
-  {
-
-    return (
-      <div>      
-        <div id="signButton">        
-          <button className="btn btn-black" onClick={()=>{props.showSignIn? props.setShowSignIn(false):props.setShowSignIn(true)}}>
-            Connexion
-          </button>
-        </div>
-      </div>
-      );
-  } else {
-    return ( 
-    <div id="regButton">        
-      <button className="btn btn-black" onClick={()=>{}}>
-        {props.user}</button>
-    </div>)
-  }
+  return (
+    <div id="signButton" className="d-inline-block">
+      <button
+        className="btn btn-sm btn-outline-light mr-2"
+        onClick={() => props.setShowSignIn(!props.showSignIn)}
+      >
+        Connexion
+      </button>
+    </div>
+  );
 }
-
 
 export default SignIn;
