@@ -4,10 +4,24 @@
  * One place owns the browser-like headers, the timeout, and the translation of
  * failures into messages a model can act on. Every tool goes through here.
  */
+import {
+  fetch as undiciFetch,
+  Agent,
+  type Response as UndiciResponse,
+} from "undici";
 import { NBA_STATS_HEADERS } from "../constants.js";
 
 /** Default per-request timeout. stats.nba.com is slow and occasionally stalls. */
 const REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * Shared connection pool that negotiates HTTP/2 over TLS (with automatic
+ * fallback to HTTP/1.1 via ALPN). cdn.nba.com (Akamai) answers 403 to HTTP/1.1
+ * requests from datacenter IPs but 200 over HTTP/2 — the same reason the PHP app
+ * sets CURL_HTTP_VERSION_2TLS. Node's global fetch is HTTP/1.1-only, so we route
+ * every request through an undici dispatcher with allowH2 enabled.
+ */
+const h2Dispatcher = new Agent({ allowH2: true });
 
 /**
  * Error carrying an HTTP status (or 0 for network/timeout failures) plus a
@@ -54,9 +68,13 @@ export async function nbaFetchJson<T>(
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const composed = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
-  let response: Response;
+  let response: UndiciResponse;
   try {
-    response = await fetch(url, { headers, signal: composed });
+    response = await undiciFetch(url, {
+      headers,
+      signal: composed,
+      dispatcher: h2Dispatcher,
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
       throw new NbaApiError(
