@@ -58,6 +58,33 @@ export interface RunOptions {
   maxTokens?: number;
   /** Override the system prompt (e.g. the preview briefing prompt). */
   systemPrompt?: string;
+  /** Thinking/compute effort. Lower = fewer thinking tokens (billed as output). */
+  effort?: "low" | "medium" | "high" | "xhigh" | "max";
+}
+
+type EphemeralCacheable = { cache_control?: { type: "ephemeral" } };
+
+/**
+ * Prompt caching for the agentic loop. The stable prefix (tool schemas + system
+ * prompt) is cached once; a single rolling breakpoint on the latest message then
+ * lets every turn re-read the accumulated history from cache (~0.1x input price)
+ * instead of re-billing it in full. Breakpoints used: tools + system + rolling = 3
+ * (the API allows 4). Caching is transparent — it changes cost, never the output.
+ */
+function applyRollingCache(messages: Anthropic.MessageParam[]): void {
+  // Drop any breakpoint we set on a previous turn, keep only the latest.
+  for (const message of messages) {
+    if (!Array.isArray(message.content)) continue;
+    for (const block of message.content) {
+      delete (block as EphemeralCacheable).cache_control;
+    }
+  }
+  const last = messages[messages.length - 1];
+  if (last && Array.isArray(last.content) && last.content.length > 0) {
+    (last.content[last.content.length - 1] as EphemeralCacheable).cache_control = {
+      type: "ephemeral",
+    };
+  }
 }
 
 export async function runAgent(opts: RunOptions): Promise<AgentResult> {
@@ -66,8 +93,17 @@ export async function runAgent(opts: RunOptions): Promise<AgentResult> {
   const maxTokens = opts.maxTokens ?? 16000;
 
   const systemPrompt = opts.systemPrompt ?? SYSTEM_PROMPT;
-  const tools = await opts.bridge.listAnthropicTools();
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: opts.question }];
+  // Cache the stable prefix: the system prompt and the (deterministic) tool list.
+  const system: Anthropic.TextBlockParam[] = [
+    { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+  ];
+  const baseTools = await opts.bridge.listAnthropicTools();
+  const tools: Anthropic.Tool[] = baseTools.map((tool, i) =>
+    i === baseTools.length - 1 ? { ...tool, cache_control: { type: "ephemeral" } } : tool,
+  );
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: [{ type: "text", text: opts.question }] },
+  ];
   const usage = emptyUsage();
   const toolCalls: ToolCallTrace[] = [];
 
@@ -77,11 +113,13 @@ export async function runAgent(opts: RunOptions): Promise<AgentResult> {
 
   while (turns < maxTurns) {
     turns++;
+    applyRollingCache(messages);
     const response = await client.messages.create({
       model: opts.model.id,
       max_tokens: maxTokens,
       thinking: { type: "adaptive" },
-      system: systemPrompt,
+      ...(opts.effort ? { output_config: { effort: opts.effort } } : {}),
+      system,
       tools,
       messages,
     });

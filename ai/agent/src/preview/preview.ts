@@ -68,6 +68,7 @@ export async function generatePreview(
   bridge: McpBridge,
   game: GameRef,
   model: ModelSpec,
+  effort?: "low" | "medium" | "high" | "xhigh" | "max",
 ): Promise<PreviewResult> {
   const away = `${game.away.city} ${game.away.name}`.trim();
   const home = `${game.home.city} ${game.home.name}`.trim();
@@ -81,6 +82,7 @@ export async function generatePreview(
     model,
     systemPrompt: PREVIEW_SYSTEM,
     maxTokens: 16000,
+    effort,
   });
 
   const corpus = agent.toolCalls.map((t) => t.resultText).join("\n");
