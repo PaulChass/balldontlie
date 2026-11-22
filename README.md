@@ -99,10 +99,6 @@ symfony serve   # ou `php -S localhost:8000 -t public`
 ## 🔧 Commandes utiles
 
 ```bash
-# Résoudre les paris en attente/acceptés depuis les résultats NBA
-# (à planifier via cron ; l'ancienne route HTTP ouverte /check a été supprimée)
-php bin/console app:bets:check
-
 # Tests unitaires
 vendor/bin/phpunit --testsuite unit
 ```
