@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 use App\Services\MatchsDeLaNuit;
 use App\Services\StatsManager;
+use App\Services\WinProbability;
 use App\Entity\User;
 use App\Entity\Bet;
 use App\Entity\Comment;
@@ -600,6 +601,20 @@ class MainController extends AbstractController
         $data['aWins'] = 1000 / $aodd;
         $data['hOdds'] = $hodd;
         $data['aOdds'] = $aodd;
+        $response = new JsonResponse(['data' => $data]);
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        return $response;
+    }
+
+    /**
+     * Probabilité de victoire estimée par notre modèle (net rating + avantage
+     * terrain + blessés), distincte de la cote du bookmaker scrapée par /simulation.
+     *
+     * @Route("/win-probability/{hTeamId}/{aTeamId}", name="win_probability", requirements={"hTeamId"="\d+","aTeamId"="\d+"})
+     */
+    public function winProbability(WinProbability $winProbability, int $hTeamId, int $aTeamId): JsonResponse
+    {
+        $data = $winProbability->estimate($hTeamId, $aTeamId);
         $response = new JsonResponse(['data' => $data]);
         $response->headers->set('Access-Control-Allow-Origin', '*');
         return $response;
