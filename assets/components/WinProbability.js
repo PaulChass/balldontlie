@@ -68,10 +68,13 @@ function WinProbability(props) {
   const homeName = props.hTeamName || data.home.name;
   const awayName = props.aTeamName || data.away.name;
 
-  // Cote du bookmaker (de-viggée côté serveur) → proba implicite = 1/cote.
+  // Cote brute Parions Sport (telle qu'affichée) → proba implicite = 1/cote.
+  // On privilégie la cote brute ; repli sur l'ancienne cote ajustée si besoin.
   const bk = props.bookmaker;
-  const hOdds = bk && bk.hOdds ? parseFloat(bk.hOdds) : null;
-  const aOdds = bk && bk.aOdds ? parseFloat(bk.aOdds) : null;
+  const hRaw = bk && (bk.hOddsRaw || bk.hOdds);
+  const aRaw = bk && (bk.aOddsRaw || bk.aOdds);
+  const hOdds = hRaw ? parseFloat(hRaw) : null;
+  const aOdds = aRaw ? parseFloat(aRaw) : null;
   const impliedHome = hOdds ? (100 / hOdds).toFixed(1) : null;
   const impliedAway = aOdds ? (100 / aOdds).toFixed(1) : null;
   // « Value » : notre proba dépasse la proba implicite du bookmaker.

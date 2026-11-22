@@ -591,16 +591,30 @@ class MainController extends AbstractController
             }
             $j++;
         }
-        $hodd = str_replace(',', '.', $odds[0]);
-        $aodd = str_replace(',', '.', $odds[1]);
-        $oddMultiplier = (1 / floatval($hodd)) + (1 / floatval($aodd));
-        $hodd = floatval($hodd) * $oddMultiplier;
-        $aodd = floatval($aodd) * $oddMultiplier;
+        // Cotes brutes telles qu'affichées par Parions Sport.
+        $hoddRaw = isset($odds[0]) ? floatval(str_replace(',', '.', $odds[0])) : 0.0;
+        $aoddRaw = isset($odds[1]) ? floatval(str_replace(',', '.', $odds[1])) : 0.0;
+
         $data['count'] = 1000;
-        $data['hWins'] = 1000 / $hodd;
-        $data['aWins'] = 1000 / $aodd;
-        $data['hOdds'] = $hodd;
-        $data['aOdds'] = $aodd;
+        if ($hoddRaw > 0 && $aoddRaw > 0) {
+            // Version « ajustée » (marge du bookmaker retirée), conservée pour compat.
+            $oddMultiplier = (1 / $hoddRaw) + (1 / $aoddRaw);
+            $hodd = $hoddRaw * $oddMultiplier;
+            $aodd = $aoddRaw * $oddMultiplier;
+            $data['hWins'] = 1000 / $hodd;
+            $data['aWins'] = 1000 / $aodd;
+            $data['hOdds'] = $hodd;
+            $data['aOdds'] = $aodd;
+        } else {
+            // Scraping en échec : on ne fabrique pas de cote.
+            $data['hWins'] = null;
+            $data['aWins'] = null;
+            $data['hOdds'] = null;
+            $data['aOdds'] = null;
+        }
+        // Cotes brutes (non ajustées) pour l'affichage.
+        $data['hOddsRaw'] = $hoddRaw > 0 ? $hoddRaw : null;
+        $data['aOddsRaw'] = $aoddRaw > 0 ? $aoddRaw : null;
         $response = new JsonResponse(['data' => $data]);
         $response->headers->set('Access-Control-Allow-Origin', '*');
         return $response;
