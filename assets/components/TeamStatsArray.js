@@ -155,42 +155,6 @@ function TeamsStatsArrays(props) {
     });
   }, [homeTeam, awayTeam, home]);
 
-  function bet(home) {
-    if (props.registered == "Registration successful") {
-      props.setIt(props.it + 1);
-      // Send the registration data to your Symfony backend API
-
-      fetch("index.php/bet", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          team: home,
-          odd: odd,
-          user: props.user,
-          game: game,
-          gameId: props.gameId,
-          betAmount: betAmount,
-          startTime: props.startTime,
-          startDate: props.startDate,
-        }),
-      })
-        .then((response) => {
-          if (response.status === 200) {
-            props.setIt(props.it + 1);
-            alert("pari enregistré");
-          } else {
-            // Handle registration errors, e.g., display error messages
-          }
-        })
-        .catch((error) => {
-          // Handle network or other errors
-        });
-    } else {
-      alert("Vous devez être connecté pour proposer ce pari");
-    }
-  }
 
   /***function showBets(game) {
     ///All bets but user bets for this game
@@ -419,15 +383,6 @@ function TeamsStatsArrays(props) {
 
   **/
 
-    function getBalance(user) {
-      let url = "/index.php/balance/" + user;
-      fetch(url) // Replace with the correct API endpoint URL
-        .then((response) => response.json())
-        .then((data) => props.setBalance(data))
-        .catch((error) => console.error("Error fetching data:", error));
-    }
-
-    
   useEffect(() => {
     if (typeof props.teams !== "undefined" && props.teams[0] !== 0) {
       var homeUrl =
@@ -635,100 +590,8 @@ function TeamsStatsArrays(props) {
           >
             Injury report
           </button>
-          <button
-            type="button"
-            className={`btn ${
-              subMenuItem === 1 ? "btn-dark p-2 m-1 active" : "btn-dark p-2 m-1"
-            }`}
-            style={{ borderRadius: "1rem" }}
-            onClick={() => setSubMenuItem(1)}
-          >
-            Parier sur ce match
-          </button>
         </div>
 
-        <div style={{ display: subMenuItem == 1 ? "block" : "none" }}>
-          <h3 className="text-center text-white m-3">Miser sur le vainqueur</h3>
-          <p className="text-center text-white">
-            {" "}
-            (remboursé si aucun preneur)
-          </p>
-
-          <table
-            className="col-lg-10  table table-hover table-dark bg-dark text-white large"
-            style={{ borderRadius: "4rem", margin: "auto" }}
-          >
-            <tbody>
-              <tr>
-                <td style={{ padding: "2rem" }}>
-                  Miser{" "}
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    className="form-control p-2 text-white text-center"
-                    onChange={(e) => setBetAmount(e.target.value)}
-                    value={betAmount}
-                  />{" "}
-                </td>
-                <td>
-                  {" "}
-                  sur les
-                  <select
-                    className="custom-select p-2 text-white text-center"
-                    name="home"
-                    id="homeSelect"
-                    onChange={(e) => setHome(e.target.value)}
-                    style={{ fontSize: "1rem" }}
-                  >
-                    <option
-                      value="0"
-                      style={{
-                        color: "black",
-                        backgroundColor: "white",
-                        textAlign: "center",
-                      }}
-                    >
-                      {homeTeam}
-                    </option>
-                    <option
-                      value="1"
-                      style={{
-                        color: "black",
-                        backgroundColor: "white",
-                        textAlign: "center",
-                      }}
-                    >
-                      {awayTeam}{" "}
-                    </option>
-                  </select>
-                </td>
-                <td>
-                  Cote :
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    className="form-control p-2 text-white text-center"
-                    onChange={(e) => setOdd(e.target.value)}
-                    value={odd}
-                  />
-                </td>
-                <td>
-                  Gains :<p className="large">{(odd * betAmount).toFixed(2)}</p>
-                </td>
-                <td>
-                  <button
-                    className="btn btn-primary w-50 "
-                    onClick={() => bet(home)}
-                  >
-                    Miser{" "}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
       <div style={{ display: subMenuItem == 0 ? "block" : "none" }}>
         <h3 className="text-white text-center m-3">Comparaison des équipes</h3>

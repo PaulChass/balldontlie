@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect } from "react";
 import StatGraph from "./StatGraph";
 import "../styles/PlayersStatsArray.css";
-import BetStatForm from "./BetStatForm";
 import { array, func } from "prop-types";
 
 function PlayersStats(props) {
@@ -444,11 +443,7 @@ function PlayersStats(props) {
   }
   return (
     <div className="playersStats" style={{ margin: "auto" }}>
-      <div id="graph" className="pt-3 pb-3" style={{display: props.subMenuItem == 1 || props.subMenuItem==3?  "block" :  "none"}}>
-      
-      <h3 className="text-center text-white m-3" style={{display: props.subMenuItem == 1 ?  "block" :  "none"}}>
-              Miser sur les stats d'un joueurs
-            </h3>
+      <div id="graph" className="pt-3 pb-3" style={{display: props.subMenuItem==3?  "block" :  "none"}}>
         {" "}
         <div className="m-3 bg-dark p-4" style={{borderRadius:"4rem"}}>
           <input
@@ -521,20 +516,6 @@ function PlayersStats(props) {
               </option>
             </select>
           </div>}
-          {graphParam[0] !== 0 &&
-            props.subMenuItem==1  && <BetStatForm
-              id={formParam[0]}
-              name={formParam[1]}
-              stat={formParam[2]}
-              statValue={formParam[3]}
-              registered={props.registered}
-              user={props.user}
-              it={props.it}
-              setIt={props.setIt}
-              gameId={props.gameId}
-              startTime={props.startTime}
-              startDate={props.startDate}
-            />}
            {graphParam[0] !== 0 &&
            ( props.subMenuItem==3)  && <StatGraph graphParam={graphParam} setGraphParam={setGraphParam} />}
          

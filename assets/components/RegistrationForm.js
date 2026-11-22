@@ -1,59 +1,70 @@
+import React, { useState } from 'react';
 
-
-import React, { useState, useEffect } from 'react';
-
-
+/**
+ * Formulaire d'inscription (affiché quand menuItem == 5).
+ * N'envoie que nom, email et mot de passe — plus de champs liés aux paris.
+ */
 function RegistrationForm(props) {
-    
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const [formData, setFormData] = useState({
-        name: '',
-        password: '',
-        email: '',
-        friends: [],
-        balance: 0.0,
-        bets: [],
-      });
-    
-      const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-      };
-    
-    
-      const handleSubmit = (e) => {
-        e.preventDefault();
-    
-        // Send the registration data to your Symfony backend API
-        fetch('index.php/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        })
-        .then((response) => response.json())
-        .then((data) => {
-          if(data.message !=='Registration successful')
-          {alert(data.message)}
-          else{
-            props.setUser(formData.name);
-            props.setRegistered(data.message);
-  
-            alert('Le compte a bien été créer');
-            props.setMenuItem(0);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    fetch('index.php/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setLoading(false);
+        if (data.message !== 'Registration successful') {
+          setError(data.message || 'Inscription impossible.');
+        } else {
+          props.setUser(formData.name);
+          props.setRegistered(data.message);
+          props.setMenuItem(0);
         }
-        })      
-    }
-    
-    if(props.menuItem==5) {
-      return (
-        <div id="reg" className='w-50 mx-auto bg-dark text-white justify-content-center align-items-center m-3 p-5' style={{opacity:0.8,borderRadius:"1rem"}}>
-      <h2> Creer un compte </h2>
-      
+      })
+      .catch(() => {
+        setLoading(false);
+        setError('Inscription impossible pour le moment.');
+      });
+  };
+
+  if (props.menuItem != 5) {
+    return null;
+  }
+
+  return (
+    <div
+      id="reg"
+      className="auth-card w-100 mx-auto bg-dark text-white m-3 p-4"
+      style={{ maxWidth: '420px', opacity: 0.95, borderRadius: '1rem' }}
+    >
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="m-0" style={{ fontSize: '1.5rem' }}>Créer un compte</h2>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-light"
+          aria-label="Fermer"
+          onClick={() => props.setMenuItem(0)}
+        >
+          ✕
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit}>
-        <div>
-          <label className='form-label'>Name</label>
+        <div className="mb-3">
+          <label className="form-label">Nom d'utilisateur</label>
           <input
             type="text"
             name="name"
@@ -63,33 +74,37 @@ function RegistrationForm(props) {
             onChange={handleChange}
           />
         </div>
-        <div>
-          <label className='form-label'>Password</label>
-          <input
-            type="password"
-            name="password"
-            className="form-control"
-            required
-            value={formData.password}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label className='form-label'>Email</label>
+        <div className="mb-3">
+          <label className="form-label">Email</label>
           <input
             type="email"
             name="email"
             className="form-control"
-            required
             value={formData.email}
+            required
             onChange={handleChange}
           />
         </div>
-        {/* Add fields for friends, balance, and bets here */}
-        <button className='btn btn-primary mt-3' style={{marginLeft:"30%",width:"40%"}} type="submit">Register</button>
+        <div className="mb-3">
+          <label className="form-label">Mot de passe</label>
+          <input
+            type="password"
+            name="password"
+            className="form-control"
+            value={formData.password}
+            required
+            onChange={handleChange}
+          />
+        </div>
+
+        {error && <p className="text-warning text-center">{error}</p>}
+
+        <button type="submit" className="btn btn-primary w-100 mt-2" disabled={loading}>
+          {loading ? 'Création…' : 'Créer mon compte'}
+        </button>
       </form>
     </div>
-        )} return null;
+  );
 }
 
-export default RegistrationForm
+export default RegistrationForm;
