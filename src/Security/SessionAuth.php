@@ -19,6 +19,10 @@ class SessionAuth
 {
     private const SESSION_KEY = 'auth_user_id';
 
+    /** Préférence « Qualité IA » : privilégier la qualité des réponses de l'assistant
+     *  au coût. Stockée en session (pas de migration en prod), par utilisateur connecté. */
+    private const AI_QUALITY_KEY = 'ai_prefer_quality';
+
     public function __construct(
         private readonly RequestStack $requestStack,
         private readonly EntityManagerInterface $entityManager,
@@ -74,5 +78,28 @@ class SessionAuth
         $user = $this->getUser();
 
         return $user !== null ? $user->getName() : null;
+    }
+
+    /**
+     * L'utilisateur privilégie-t-il la qualité des réponses IA au coût ?
+     * false par défaut (mode économique) et si aucune session.
+     */
+    public function prefersAiQuality(): bool
+    {
+        try {
+            $session = $this->requestStack->getSession();
+        } catch (SessionNotFoundException $e) {
+            return false;
+        }
+
+        return (bool) $session->get(self::AI_QUALITY_KEY, false);
+    }
+
+    /**
+     * Enregistre la préférence « Qualité IA » pour la session courante.
+     */
+    public function setAiQualityPreference(bool $prefer): void
+    {
+        $this->requestStack->getSession()->set(self::AI_QUALITY_KEY, $prefer);
     }
 }

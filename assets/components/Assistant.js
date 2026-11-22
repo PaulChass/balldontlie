@@ -190,7 +190,7 @@ function PreviewCard({ preview }) {
     );
 }
 
-function PreviewsSection({ previewsUrl }) {
+function PreviewsSection({ previewsUrl, reloadKey }) {
     const [loading, setLoading] = useState(true);
     const [previews, setPreviews] = useState([]);
     const [error, setError] = useState('');
@@ -198,6 +198,11 @@ function PreviewsSection({ previewsUrl }) {
 
     useEffect(() => {
         let alive = true;
+        // reloadKey change (préférence qualité basculée) → on régénère les avant-matchs.
+        setLoading(true);
+        setError('');
+        setEmpty(false);
+        setPreviews([]);
         (async () => {
             try {
                 const resp = await fetch(previewsUrl, { headers: { Accept: 'application/json' } });
@@ -219,7 +224,7 @@ function PreviewsSection({ previewsUrl }) {
         return () => {
             alive = false;
         };
-    }, [previewsUrl]);
+    }, [previewsUrl, reloadKey]);
 
     return (
         <section className="bk-card">
@@ -237,7 +242,83 @@ function PreviewsSection({ previewsUrl }) {
     );
 }
 
+/**
+ * Préférence « Qualité IA » — réservée aux utilisateurs connectés. Activée, elle
+ * dit à l'assistant de privilégier la qualité (modèle plus capable) au coût ; la
+ * préférence est stockée côté serveur (session) et réellement consommée par l'agent.
+ */
+function QualityToggle({ authed, quality, onToggle, busy }) {
+    if (!authed) {
+        return (
+            <div className="bk-quality bk-quality-muted">
+                Connecte-toi pour privilégier la qualité des réponses de l'assistant.
+            </div>
+        );
+    }
+    return (
+        <div className="bk-quality">
+            <label className="bk-switch">
+                <input
+                    type="checkbox"
+                    checked={quality}
+                    disabled={busy}
+                    onChange={(e) => onToggle(e.target.checked)}
+                />
+                <span className="bk-switch-slider" />
+            </label>
+            <span className="bk-quality-label">Qualité IA {quality ? '· activée' : '· économique'}</span>
+            <span className="bk-quality-hint">
+                {quality
+                    ? 'Modèle plus capable, réponses plus fouillées (coût plus élevé).'
+                    : 'Mode par défaut : rapide et économique.'}
+            </span>
+        </div>
+    );
+}
+
 export default function Assistant({ askUrl, previewsUrl }) {
+    const [authed, setAuthed] = useState(false);
+    const [quality, setQuality] = useState(false);
+    const [togglingQuality, setTogglingQuality] = useState(false);
+
+    // Restaure l'état de connexion + la préférence qualité au chargement.
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const resp = await fetch('/me', { headers: { Accept: 'application/json' } });
+                const data = await resp.json();
+                if (!alive || !data || !data.authenticated) return;
+                setAuthed(true);
+                setQuality(Boolean(data.aiPreferQuality));
+            } catch (e) {
+                /* non connecté ou /me indisponible : le toggle reste masqué */
+            }
+        })();
+        return () => {
+            alive = false;
+        };
+    }, []);
+
+    const toggleQuality = useCallback(async (next) => {
+        setTogglingQuality(true);
+        try {
+            const resp = await fetch('/api/account/ai-quality', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prefer: next }),
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                setQuality(Boolean(data.aiPreferQuality));
+            }
+        } catch (e) {
+            /* on garde l'état précédent si l'enregistrement échoue */
+        } finally {
+            setTogglingQuality(false);
+        }
+    }, []);
+
     return (
         <div className="bk-assistant">
             <header className="bk-header">
@@ -246,9 +327,10 @@ export default function Assistant({ askUrl, previewsUrl }) {
                 <p className="bk-tagline">
                     Agent d'analyse fondé sur les données en direct. Les chiffres proviennent des outils, pas de la mémoire du modèle.
                 </p>
+                <QualityToggle authed={authed} quality={quality} onToggle={toggleQuality} busy={togglingQuality} />
             </header>
             <AskSection askUrl={askUrl} />
-            <PreviewsSection previewsUrl={previewsUrl} />
+            <PreviewsSection previewsUrl={previewsUrl} reloadKey={quality} />
             <footer className="bk-footer">
                 Démonstration technique : agent + serveur MCP + routing de modèle + contrôle de factualité.
             </footer>
