@@ -31,12 +31,12 @@ export const MODELS = {
   opus: {
     id: "claude-opus-5-5",
     label: "Opus 5.5",
-    pricing: { inputPerMTok: 4, outputPerMTok: 20, cacheReadPerMTok: 0.4 },
+    pricing: { inputPerMTok: 4, outputPerMTok: 20, cacheReadPerMTok: 0.2 },
   },
   sonnet: {
     id: "claude-sonnet-5-5",
     label: "Sonnet 5.5",
-    pricing: { inputPerMTok: 2, outputPerMTok: 10, cacheReadPerMTok: 0.2 },
+    pricing: { inputPerMTok: 2, outputPerMTok: 10, cacheReadPerMTok: 0.1 },
   },
   haiku: {
     id: "claude-haiku-5-5",

@@ -45,6 +45,13 @@ const PREVIEW_CACHE_TTL_MS = 60 * 60 * 1000; // 1h: pre-game data moves slowly
 const PREVIEW_DEFAULT_LIMIT = 2;
 const PREVIEW_MAX_LIMIT = 6;
 
+// Model + effort for the auto previews — the single place to tune preview cost.
+// Opus is the validated default; dropping to Sonnet and/or a lower effort is a
+// cost lever. Flip here once the judge confirms quality holds:
+//   npm run preview -- --model sonnet --effort low --all
+const PREVIEW_MODEL = MODELS.opus;
+const PREVIEW_EFFORT: "low" | "medium" | "high" | "xhigh" | "max" | undefined = undefined;
+
 let bridge: McpBridge;
 
 function hasCredentials(): boolean {
@@ -196,7 +203,7 @@ async function handlePreviews(res: ServerResponse, url: URL): Promise<void> {
       const games = slate.slice(0, limit);
       const previews = [];
       for (const game of games) {
-        const p = await generatePreview(bridge, game, MODELS.opus);
+        const p = await generatePreview(bridge, game, PREVIEW_MODEL, PREVIEW_EFFORT);
         previews.push({
           gameId: p.game.gameId,
           title: p.title,

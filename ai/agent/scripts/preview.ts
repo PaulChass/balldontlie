@@ -6,9 +6,11 @@
  *   npm run preview -- --all        # every game on the slate
  *   npm run preview -- --limit 2 --day 1   # 2 games for tomorrow
  *   npm run preview -- --no-judge --json
+ *   npm run preview -- --model sonnet --effort low --all   # cost experiment
  *
  * Previews are inherently multi-step, so they run on Opus by default
- * (--model to override); the judge runs on Sonnet.
+ * (--model to override); --effort tunes thinking depth (low|medium|high|xhigh|
+ * max). The judge runs on Sonnet.
  */
 import { judgePreview } from "../src/preview/judge.js";
 import { generatePreview, getSlate, type GameRef } from "../src/preview/preview.js";
@@ -36,6 +38,13 @@ async function main(): Promise<void> {
   const limit = all ? Infinity : Number(arg("limit", argv) ?? "1");
   const dayOffset = Number(arg("day", argv) ?? "0");
   const model = resolveModel(arg("model", argv) ?? "opus");
+  const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+  const effortArg = arg("effort", argv);
+  const effort = EFFORTS.find((e) => e === effortArg);
+  if (effortArg && !effort) {
+    console.error(`Invalid --effort "${effortArg}". Use one of: ${EFFORTS.join(", ")}.`);
+    process.exit(1);
+  }
 
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
     console.error("No Anthropic credentials. Set ANTHROPIC_API_KEY or put it in the project .env.");
@@ -59,7 +68,7 @@ async function main(): Promise<void> {
 
     for (const game of games) {
       count++;
-      const preview = await generatePreview(bridge, game, model);
+      const preview = await generatePreview(bridge, game, model, effort);
       const judge = noJudge ? null : await judgePreview(preview.briefing, {});
       const cost = preview.agent.costUsd + (judge?.costUsd ?? 0);
       totalCost += cost;
