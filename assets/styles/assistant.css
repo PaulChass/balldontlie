@@ -169,6 +169,84 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
+/* Préférence « Qualité IA » */
+.bk-quality {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 14px;
+}
+
+.bk-quality-muted {
+    color: #f0ece8;
+    font-size: 0.82rem;
+    opacity: 0.8;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bk-quality-label {
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bk-quality-hint {
+    color: #f0ece8;
+    font-size: 0.78rem;
+    opacity: 0.85;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bk-switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex: none;
+}
+
+.bk-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.bk-switch-slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    transition: background 0.15s ease;
+}
+
+.bk-switch-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+}
+
+.bk-switch input:checked + .bk-switch-slider {
+    background: #2e7d32;
+}
+
+.bk-switch input:checked + .bk-switch-slider::before {
+    transform: translateX(18px);
+}
+
+.bk-switch input:disabled + .bk-switch-slider {
+    opacity: 0.6;
+    cursor: default;
+}
+
 @media (max-width: 520px) {
     .bk-ask-form { flex-direction: column; }
     .bk-ask-btn { width: 100%; }

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Security\SessionAuth;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -69,7 +70,7 @@ class AssistantController extends AbstractController
      *
      * @Route("/api/nba/ask", name="api_nba_ask", methods={"POST"})
      */
-    public function ask(Request $request, CacheItemPoolInterface $cache): JsonResponse
+    public function ask(Request $request, CacheItemPoolInterface $cache, SessionAuth $sessionAuth): JsonResponse
     {
         if (!$this->allowRequest($cache, (string) $request->getClientIp())) {
             return $this->json(
@@ -91,8 +92,13 @@ class AssistantController extends AbstractController
             );
         }
 
+        // Préférence « Qualité IA » : réservée aux connectés ; sinon mode éco.
+        $preferQuality = $sessionAuth->prefersAiQuality();
+
         try {
-            $response = $this->agentClient()->post('ask', ['json' => ['question' => $question]]);
+            $response = $this->agentClient()->post('ask', [
+                'json' => ['question' => $question, 'prefer_quality' => $preferQuality],
+            ]);
         } catch (ConnectException $e) {
             return $this->serviceUnavailable();
         } catch (GuzzleException $e) {
@@ -110,11 +116,14 @@ class AssistantController extends AbstractController
      *
      * @Route("/api/nba/previews", name="api_nba_previews", methods={"GET"})
      */
-    public function previews(Request $request, CacheItemPoolInterface $cache): JsonResponse
+    public function previews(Request $request, CacheItemPoolInterface $cache, SessionAuth $sessionAuth): JsonResponse
     {
         $day = max(0, min(1, (int) $request->query->get('day', 0)));
         $limit = max(1, min(6, (int) $request->query->get('limit', 2)));
-        $cacheKey = sprintf('nba_previews_%d_%d', $day, $limit);
+        // Préférence « Qualité IA » : des avant-matchs en mode qualité (modèle plus
+        // capable) sont mis en cache séparément du mode éco, par connecté.
+        $preferQuality = $sessionAuth->prefersAiQuality();
+        $cacheKey = sprintf('nba_previews_%d_%d_%s', $day, $limit, $preferQuality ? 'q' : 'e');
 
         $item = $cache->getItem($cacheKey);
         if ($item->isHit()) {
@@ -122,7 +131,9 @@ class AssistantController extends AbstractController
         }
 
         try {
-            $response = $this->agentClient()->get('previews', ['query' => ['day' => $day, 'limit' => $limit]]);
+            $response = $this->agentClient()->get('previews', [
+                'query' => ['day' => $day, 'limit' => $limit, 'quality' => $preferQuality ? 1 : 0],
+            ]);
         } catch (ConnectException $e) {
             return $this->serviceUnavailable();
         } catch (GuzzleException $e) {

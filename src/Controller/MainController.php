@@ -181,7 +181,27 @@ class MainController extends AbstractController
         return new JsonResponse([
             'authenticated' => true,
             'name' => $user->getName(),
+            'aiPreferQuality' => $sessionAuth->prefersAiQuality(),
         ], 200);
+    }
+
+    /**
+     * Préférence « Qualité IA » : privilégier la qualité des réponses de
+     * l'assistant au coût. Réservée aux utilisateurs connectés, stockée en session.
+     *
+     * @Route("/api/account/ai-quality", name="api_account_ai_quality", methods={"POST"})
+     */
+    public function setAiQuality(Request $request, SessionAuth $sessionAuth): JsonResponse
+    {
+        if ($sessionAuth->getUser() === null) {
+            return new JsonResponse(['message' => 'Connexion requise'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $prefer = is_array($data) ? (bool) ($data['prefer'] ?? false) : false;
+        $sessionAuth->setAiQualityPreference($prefer);
+
+        return new JsonResponse(['aiPreferQuality' => $prefer], 200);
     }
 
     /**

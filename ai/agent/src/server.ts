@@ -107,6 +107,18 @@ function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
+type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+
+// « Qualité IA » : quand un utilisateur connecté privilégie la qualité au coût,
+// on monte le modèle choisi par le routeur d'un cran et on augmente l'effort.
+// Le mode par défaut (préférence absente) reste économique (routeur + cache).
+const QUALITY_UPGRADE: Record<string, keyof typeof MODELS> = {
+  haiku: "sonnet",
+  sonnet: "opus",
+  opus: "opus",
+};
+const QUALITY_EFFORT: Effort = "high";
+
 // ─── /ask ──────────────────────────────────────────────────────────────────
 
 async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -135,12 +147,20 @@ async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<voi
 
   const forced = typeof body.model === "string" && body.model.toLowerCase() !== "auto";
   const decision = forced ? null : route(question);
-  const model = forced ? resolveModel(body.model as string) : resolveModel(decision!.model);
+  const preferQuality = body.prefer_quality === true;
+
+  // Préférence qualité : on surclasse le modèle du routeur (sauf modèle forcé).
+  let model = forced ? resolveModel(body.model as string) : resolveModel(decision!.model);
+  let effort: Effort | undefined;
+  if (preferQuality && decision) {
+    model = resolveModel(QUALITY_UPGRADE[decision.model]);
+    effort = QUALITY_EFFORT;
+  }
 
   try {
     const { result, elapsedMs } = await runExclusive(async () => {
       const started = Date.now();
-      const r = await runAgent({ question, bridge, model, maxTurns: ASK_MAX_TURNS });
+      const r = await runAgent({ question, bridge, model, maxTurns: ASK_MAX_TURNS, effort });
       return { result: r, elapsedMs: Date.now() - started };
     });
 
@@ -153,6 +173,7 @@ async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<voi
       model: { id: model.id, label: model.label },
       tier: decision?.tier ?? "forced",
       reasons: decision?.reasons ?? ["forced"],
+      quality: preferQuality,
       turns: result.turns,
       tools: result.toolCalls.map((t) => ({ name: t.name, isError: t.isError })),
       grounding: {
@@ -188,7 +209,12 @@ async function handlePreviews(res: ServerResponse, url: URL): Promise<void> {
   const day = Number(url.searchParams.get("day") ?? "0") || 0;
   const rawLimit = Number(url.searchParams.get("limit") ?? String(PREVIEW_DEFAULT_LIMIT));
   const limit = Math.max(1, Math.min(PREVIEW_MAX_LIMIT, Number.isFinite(rawLimit) ? rawLimit : PREVIEW_DEFAULT_LIMIT));
-  const key = `${day}:${limit}`;
+  // « Qualité IA » : avant-matchs sur un modèle plus capable (Opus + effort haut),
+  // mis en cache séparément du mode éco.
+  const quality = url.searchParams.get("quality") === "1";
+  const previewModel = quality ? MODELS.opus : PREVIEW_MODEL;
+  const previewEffort: Effort | undefined = quality ? QUALITY_EFFORT : PREVIEW_EFFORT;
+  const key = `${day}:${limit}:${quality ? "q" : "e"}`;
 
   const cached = previewCache.get(key);
   if (cached && Date.now() - cached.at < PREVIEW_CACHE_TTL_MS) {
@@ -205,7 +231,7 @@ async function handlePreviews(res: ServerResponse, url: URL): Promise<void> {
       const games = slate.slice(0, limit);
       const previews = [];
       for (const game of games) {
-        const p = await generatePreview(bridge, game, PREVIEW_MODEL, PREVIEW_EFFORT);
+        const p = await generatePreview(bridge, game, previewModel, previewEffort);
         previews.push({
           gameId: p.game.gameId,
           title: p.title,
