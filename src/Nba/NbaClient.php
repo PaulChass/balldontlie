@@ -50,7 +50,10 @@ class NbaClient
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            // Le CDN NBA (Akamai) renvoie 403 aux requêtes en HTTP/1.1 depuis une IP
+            // datacenter, mais répond 200 en HTTP/2 (comme un vrai navigateur). On
+            // privilégie donc HTTP/2 avec repli automatique sur 1.1 si indisponible.
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2TLS,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => $headers,
         ]);
