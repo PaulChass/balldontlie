@@ -590,6 +590,16 @@ function TeamsStatsArrays(props) {
           >
             Injury report
           </button>
+          <button
+            type="button"
+            className={`btn ${
+              subMenuItem === 4 ? "btn-dark p-2 m-1 active" : "btn-dark p-2 m-1"
+            }`}
+            style={{ borderRadius: "1rem" }}
+            onClick={() => setSubMenuItem(4)}
+          >
+            Proba victoire
+          </button>
         </div>
 
       </div>
@@ -966,12 +976,14 @@ function TeamsStatsArrays(props) {
         </div>
       </div>
 
-      <WinProbability
-        teams={props.teams}
-        hTeamName={props.hTeamName}
-        aTeamName={props.aTeamName}
-        bookmaker={simulated}
-      />
+      <div style={{ display: subMenuItem == 4 ? "block" : "none" }}>
+        <WinProbability
+          teams={props.teams}
+          hTeamName={props.hTeamName}
+          aTeamName={props.aTeamName}
+          bookmaker={simulated}
+        />
+      </div>
 
       <div style={{ display: subMenuItem == 2 ? "block" : "none" }}>
         <Injuries
