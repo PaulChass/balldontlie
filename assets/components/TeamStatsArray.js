@@ -599,13 +599,6 @@ function TeamsStatsArrays(props) {
         {props.aTeamName}@{props.hTeamName}
       </h2>
 
-      <WinProbability
-        teams={props.teams}
-        hTeamName={props.hTeamName}
-        aTeamName={props.aTeamName}
-        bookmaker={simulated}
-      />
-
       <div className="m-3">
         <div
           className="btn-group justify-content-around col-12 mr-auto ml-auto mb-2 mt-4"
@@ -1109,6 +1102,13 @@ function TeamsStatsArrays(props) {
           />
         </div>
       </div>
+
+      <WinProbability
+        teams={props.teams}
+        hTeamName={props.hTeamName}
+        aTeamName={props.aTeamName}
+        bookmaker={simulated}
+      />
 
       <div style={{ display: subMenuItem == 2 ? "block" : "none" }}>
         <Injuries
