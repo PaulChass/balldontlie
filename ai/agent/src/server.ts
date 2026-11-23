@@ -11,8 +11,9 @@
  *
  * Endpoints (all JSON):
  *   GET  /health                     -> { ok, tools, credentials }
- *   POST /ask     { question }       -> grounded answer + routing + cost + grounding
+ *   POST /ask     { question, match? }  -> grounded answer + routing + cost + grounding
  *   GET  /previews?day=0&limit=2     -> grounded briefings for the slate (cached)
+ *   GET  /match-preview?home_team_id&away_team_id -> on-demand debrief for one match (cached)
  *
  * Design notes:
  *   - One shared MCP bridge, connected once and reused (the MCP server is a
@@ -25,13 +26,13 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
-import { runAgent } from "./agent.js";
+import { runAgent, SYSTEM_PROMPT } from "./agent.js";
 import { checkGrounding } from "./eval/grounding.js";
 import { loadAnthropicEnv } from "./loadEnv.js";
 import { McpBridge } from "./mcpBridge.js";
 import { estimateCostUsd, MODELS, resolveModel } from "./models.js";
 import { route } from "./router.js";
-import { generatePreview, getSlate, type GameRef } from "./preview/preview.js";
+import { generateMatchupPreview, generatePreview, getSlate, type GameRef } from "./preview/preview.js";
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.NBA_AGENT_PORT ?? process.env.PORT ?? 8787);
@@ -119,6 +120,45 @@ const QUALITY_UPGRADE: Record<string, keyof typeof MODELS> = {
 };
 const QUALITY_EFFORT: Effort = "high";
 
+// ─── match context (chat scopé à un match du Face-à-Face) ────────────────────
+
+interface MatchContext {
+  homeTeamId: number;
+  awayTeamId: number;
+  homeName: string;
+  awayName: string;
+}
+
+/** Parse an optional { home_team_id, away_team_id, home_name, away_name } blob. */
+function parseMatch(raw: unknown): MatchContext | null {
+  if (!raw || typeof raw !== "object") return null;
+  const m = raw as Record<string, unknown>;
+  const homeTeamId = Number(m.home_team_id);
+  const awayTeamId = Number(m.away_team_id);
+  if (!Number.isFinite(homeTeamId) || !Number.isFinite(awayTeamId) || homeTeamId <= 0 || awayTeamId <= 0) {
+    return null;
+  }
+  const homeName = typeof m.home_name === "string" ? m.home_name.trim().slice(0, 60) : "";
+  const awayName = typeof m.away_name === "string" ? m.away_name.trim().slice(0, 60) : "";
+  return {
+    homeTeamId,
+    awayTeamId,
+    homeName: homeName || `équipe ${homeTeamId}`,
+    awayName: awayName || `équipe ${awayTeamId}`,
+  };
+}
+
+/** Scope the agent to a match: same factuality contract + a match context block. */
+function buildMatchSystem(m: MatchContext): string {
+  return (
+    `${SYSTEM_PROMPT}\n\n` +
+    `Contexte du match : l'utilisateur consulte la page de ${m.awayName} @ ${m.homeName} ` +
+    `(home_team_id=${m.homeTeamId}, away_team_id=${m.awayTeamId}). Sauf s'il mentionne ` +
+    `explicitement un autre sujet, suppose que sa question porte sur ce match, ces deux ` +
+    `équipes ou leurs joueurs. Tu peux utiliser ces team ids directement avec les outils.`
+  );
+}
+
 // ─── /ask ──────────────────────────────────────────────────────────────────
 
 async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -148,6 +188,9 @@ async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<voi
   const forced = typeof body.model === "string" && body.model.toLowerCase() !== "auto";
   const decision = forced ? null : route(question);
   const preferQuality = body.prefer_quality === true;
+  // Chat scopé à un match : contexte optionnel injecté dans le system prompt.
+  const match = parseMatch(body.match);
+  const systemPrompt = match ? buildMatchSystem(match) : undefined;
 
   // Préférence qualité : on surclasse le modèle du routeur (sauf modèle forcé).
   let model = forced ? resolveModel(body.model as string) : resolveModel(decision!.model);
@@ -160,7 +203,7 @@ async function handleAsk(req: IncomingMessage, res: ServerResponse): Promise<voi
   try {
     const { result, elapsedMs } = await runExclusive(async () => {
       const started = Date.now();
-      const r = await runAgent({ question, bridge, model, maxTurns: ASK_MAX_TURNS, effort });
+      const r = await runAgent({ question, bridge, model, maxTurns: ASK_MAX_TURNS, effort, systemPrompt });
       return { result: r, elapsedMs: Date.now() - started };
     });
 
@@ -257,6 +300,71 @@ async function handlePreviews(res: ServerResponse, url: URL): Promise<void> {
   }
 }
 
+// ─── /match-preview (debrief à la demande pour un match du Face-à-Face) ───────
+
+const matchPreviewCache = new Map<string, PreviewCacheEntry>();
+
+async function handleMatchPreview(res: ServerResponse, url: URL): Promise<void> {
+  if (!hasCredentials()) {
+    sendJson(res, 503, { error: "no_credentials", message: "The agent service has no Anthropic API key configured." });
+    return;
+  }
+
+  const homeTeamId = Number(url.searchParams.get("home_team_id"));
+  const awayTeamId = Number(url.searchParams.get("away_team_id"));
+  if (!Number.isFinite(homeTeamId) || !Number.isFinite(awayTeamId) || homeTeamId <= 0 || awayTeamId <= 0) {
+    sendJson(res, 400, { error: "bad_match", message: "home_team_id et away_team_id sont requis." });
+    return;
+  }
+  const homeName = (url.searchParams.get("home_name") ?? "").trim().slice(0, 60);
+  const awayName = (url.searchParams.get("away_name") ?? "").trim().slice(0, 60);
+  const quality = url.searchParams.get("quality") === "1";
+  const previewModel = quality ? MODELS.opus : PREVIEW_MODEL;
+  const previewEffort: Effort | undefined = quality ? QUALITY_EFFORT : PREVIEW_EFFORT;
+  const key = `${homeTeamId}:${awayTeamId}:${quality ? "q" : "e"}`;
+
+  const cached = matchPreviewCache.get(key);
+  if (cached && Date.now() - cached.at < PREVIEW_CACHE_TTL_MS) {
+    sendJson(res, 200, { ...(cached.payload as object), cached: true });
+    return;
+  }
+
+  try {
+    const payload = await runExclusive(async () => {
+      const p = await generateMatchupPreview(
+        bridge,
+        {
+          homeTeamId,
+          awayTeamId,
+          homeName: homeName || `équipe ${homeTeamId}`,
+          awayName: awayName || `équipe ${awayTeamId}`,
+        },
+        previewModel,
+        previewEffort,
+      );
+      return {
+        title: p.title,
+        briefing: p.briefing,
+        grounding: {
+          ok: p.grounding.ok,
+          grounded: p.grounding.grounded.length,
+          derived: p.grounding.derived.length,
+          ungrounded: p.grounding.ungrounded.map((n) => n.raw),
+        },
+        model: { id: p.agent.model.id, label: p.agent.model.label },
+        costUsd: p.agent.costUsd,
+        tools: p.agent.toolCalls.map((t) => ({ name: t.name, isError: t.isError })),
+      };
+    });
+
+    matchPreviewCache.set(key, { at: Date.now(), payload });
+    sendJson(res, 200, { ...(payload as object), cached: false });
+  } catch (error) {
+    console.error("[match-preview] error:", error instanceof Error ? error.message : error);
+    sendJson(res, 502, { error: "match_preview_failed", message: "Le debrief du match n'a pas pu être généré." });
+  }
+}
+
 // ─── router ──────────────────────────────────────────────────────────────────
 
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -281,6 +389,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (method === "GET" && url.pathname === "/previews") {
     await handlePreviews(res, url);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/match-preview") {
+    await handleMatchPreview(res, url);
     return;
   }
 
