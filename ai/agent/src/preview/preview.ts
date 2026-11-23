@@ -91,4 +91,51 @@ export async function generatePreview(
   return { game, title: `${away} @ ${home}`, briefing: agent.answer, grounding, agent };
 }
 
+/** A matchup picked on the Face-à-Face page — team ids + display names, no slate. */
+export interface MatchupRef {
+  homeTeamId: number;
+  awayTeamId: number;
+  homeName: string;
+  awayName: string;
+}
+
+export interface MatchupPreviewResult {
+  title: string;
+  briefing: string;
+  grounding: GroundingReport;
+  agent: AgentResult;
+}
+
+/**
+ * On-demand debrief for an arbitrary matchup (not tied to tonight's slate):
+ * same grounded briefing as generatePreview, built straight from the two team
+ * ids and names the Face-à-Face page already knows.
+ */
+export async function generateMatchupPreview(
+  bridge: McpBridge,
+  matchup: MatchupRef,
+  model: ModelSpec,
+  effort?: "low" | "medium" | "high" | "xhigh" | "max",
+): Promise<MatchupPreviewResult> {
+  const home = matchup.homeName.trim();
+  const away = matchup.awayName.trim();
+  const question =
+    `Prépare l'avant-match : ${away} en déplacement chez ${home}. ` +
+    `Utilise home_team_id=${matchup.homeTeamId} et away_team_id=${matchup.awayTeamId}.`;
+
+  const agent = await runAgent({
+    question,
+    bridge,
+    model,
+    systemPrompt: PREVIEW_SYSTEM,
+    maxTokens: 16000,
+    effort,
+  });
+
+  const corpus = agent.toolCalls.map((t) => t.resultText).join("\n");
+  const grounding = checkGrounding(agent.answer, corpus);
+
+  return { title: `${away} @ ${home}`, briefing: agent.answer, grounding, agent };
+}
+
 export { PREVIEW_SYSTEM };

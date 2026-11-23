@@ -5,6 +5,7 @@ import TeamsStatsButtonBar from "./TeamsStatsButtonBar";
 import Injuries from "./Injuries";
 import Simulation from "./Simulation";
 import WinProbability from "./WinProbability";
+import MatchAssistant from "./MatchAssistant";
 import PlayersStats from "./PlayersStats";
 
 
@@ -598,7 +599,7 @@ function TeamsStatsArrays(props) {
             style={{ borderRadius: "1rem" }}
             onClick={() => setSubMenuItem(4)}
           >
-            Proba victoire
+            Proba &amp; IA
           </button>
         </div>
 
@@ -982,6 +983,11 @@ function TeamsStatsArrays(props) {
           hTeamName={props.hTeamName}
           aTeamName={props.aTeamName}
           bookmaker={simulated}
+        />
+        <MatchAssistant
+          teams={props.teams}
+          hTeamName={props.hTeamName}
+          aTeamName={props.aTeamName}
         />
       </div>
 

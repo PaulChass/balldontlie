@@ -95,9 +95,21 @@ class AssistantController extends AbstractController
         // Préférence « Qualité IA » : réservée aux connectés ; sinon mode éco.
         $preferQuality = $sessionAuth->prefersAiQuality();
 
+        $payload = ['question' => $question, 'prefer_quality' => $preferQuality];
+        // Contexte de match optionnel : chat scopé à un match du Face-à-Face.
+        $match = (is_array($data) && isset($data['match']) && is_array($data['match'])) ? $data['match'] : null;
+        if ($match !== null) {
+            $payload['match'] = [
+                'home_team_id' => (int) ($match['home_team_id'] ?? 0),
+                'away_team_id' => (int) ($match['away_team_id'] ?? 0),
+                'home_name' => mb_substr(trim((string) ($match['home_name'] ?? '')), 0, 60),
+                'away_name' => mb_substr(trim((string) ($match['away_name'] ?? '')), 0, 60),
+            ];
+        }
+
         try {
             $response = $this->agentClient()->post('ask', [
-                'json' => ['question' => $question, 'prefer_quality' => $preferQuality],
+                'json' => $payload,
             ]);
         } catch (ConnectException $e) {
             return $this->serviceUnavailable();
@@ -147,6 +159,65 @@ class AssistantController extends AbstractController
         $body = (string) $response->getBody();
 
         // Only cache a genuine success, so a transient failure isn't frozen in.
+        if ($status === Response::HTTP_OK) {
+            $item->set($body);
+            $item->expiresAfter(self::PREVIEWS_CACHE_TTL);
+            $cache->save($item);
+        }
+
+        return new JsonResponse($body, $status, [], true);
+    }
+
+    /**
+     * On-demand grounded debrief for a single matchup (Face-à-Face « Proba & IA »
+     * tab). Proxies to the agent, cached server-side per team pair + quality.
+     *
+     * @Route("/api/nba/match-preview", name="api_nba_match_preview", methods={"GET"})
+     */
+    public function matchPreview(Request $request, CacheItemPoolInterface $cache, SessionAuth $sessionAuth): JsonResponse
+    {
+        $homeTeamId = (int) $request->query->get('home_team_id', 0);
+        $awayTeamId = (int) $request->query->get('away_team_id', 0);
+        if ($homeTeamId <= 0 || $awayTeamId <= 0) {
+            return $this->json(
+                ['error' => 'bad_match', 'message' => 'Match invalide.'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+        $homeName = mb_substr(trim((string) $request->query->get('home_name', '')), 0, 60);
+        $awayName = mb_substr(trim((string) $request->query->get('away_name', '')), 0, 60);
+
+        // Préférence « Qualité IA » : debrief sur un modèle plus capable, cache séparé.
+        $preferQuality = $sessionAuth->prefersAiQuality();
+        $cacheKey = sprintf('nba_match_preview_%d_%d_%s', $homeTeamId, $awayTeamId, $preferQuality ? 'q' : 'e');
+
+        $item = $cache->getItem($cacheKey);
+        if ($item->isHit()) {
+            return new JsonResponse($item->get(), Response::HTTP_OK, [], true);
+        }
+
+        try {
+            $response = $this->agentClient()->get('match-preview', [
+                'query' => [
+                    'home_team_id' => $homeTeamId,
+                    'away_team_id' => $awayTeamId,
+                    'home_name' => $homeName,
+                    'away_name' => $awayName,
+                    'quality' => $preferQuality ? 1 : 0,
+                ],
+            ]);
+        } catch (ConnectException $e) {
+            return $this->serviceUnavailable();
+        } catch (GuzzleException $e) {
+            return $this->json(
+                ['error' => 'proxy_error', 'message' => 'Le debrief est momentanément indisponible.'],
+                Response::HTTP_BAD_GATEWAY
+            );
+        }
+
+        $status = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
         if ($status === Response::HTTP_OK) {
             $item->set($body);
             $item->expiresAfter(self::PREVIEWS_CACHE_TTL);
