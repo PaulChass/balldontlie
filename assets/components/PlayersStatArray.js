@@ -55,7 +55,7 @@ function PlayersStats(props) {
         props.seasonType;
       setHomeIsLoading(true);
       const hteamStats = fetch(homeUrl) //1
-        .then((response) => response.json()) //2
+        .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); }) //2
         .then((team) => {
           setHomeIsLoading(false);
           return team; //3
@@ -63,26 +63,30 @@ function PlayersStats(props) {
 
       setAwayIsLoading(true);
       const ateamStats = fetch(awayUrl) //1
-        .then((response) => response.json()) //2
+        .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); }) //2
         .then((team) => {
           setAwayIsLoading(false);
           return team; //3
         })
       const getTeamsStats = () => {
+        // orderBy(undefined) renvoie [] (lodash) : pas de crash si data manque ;
+        // on ajoute .catch pour ne pas rester bloqué en chargement sur un échec réseau.
         hteamStats.then((h) => {
+          const rows = h && h.data ? h.data : [];
           if (sortBy[1] == 0) {
-            setHPlayersStats(orderBy(h.data, sortBy[0]).reverse());
+            setHPlayersStats(orderBy(rows, sortBy[0]).reverse());
           } else {
-            setHPlayersStats(orderBy(h.data, sortBy[0]));
+            setHPlayersStats(orderBy(rows, sortBy[0]));
           }
-        });
+        }).catch(() => setHomeIsLoading(false));
         ateamStats.then((a) => {
+          const rows = a && a.data ? a.data : [];
           if (sortBy[1] == 0) {
-            setAPlayersStats(orderBy(a.data, sortBy[0]).reverse());
+            setAPlayersStats(orderBy(rows, sortBy[0]).reverse());
           } else {
-            setAPlayersStats(orderBy(a.data, sortBy[0]));
+            setAPlayersStats(orderBy(rows, sortBy[0]));
           }
-        });
+        }).catch(() => setAwayIsLoading(false));
       };
       
       getTeamsStats();

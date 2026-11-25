@@ -3,10 +3,19 @@
 namespace App\Services;
 
 use App\Nba\Season;
+use Psr\Cache\CacheItemPoolInterface;
 
 
 class StatsManager
 {
+    /** Cache applicatif (optionnel) pour éviter de re-scraper les sources externes. */
+    private ?CacheItemPoolInterface $cache;
+
+    public function __construct(?CacheItemPoolInterface $cache = null)
+    {
+        $this->cache = $cache;
+    }
+
 
 
 
@@ -361,40 +370,92 @@ class StatsManager
 
 
 
-    public function injury($teamId){
-     
-        $curl = curl_init();
-    
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => 'https://www.rotowire.com/basketball/tables/injury-report.php?team=ALL&pos=ALL',
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 10,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'GET',
-          CURLOPT_HTTPHEADER => array(
-          ),
-        ));
-        
-        $response = curl_exec($curl);
-        
-        curl_close($curl);
-        $injuredPlayers = json_decode($response);
-        $team_abv=$this -> getAbvFromId($teamId);
-        $infirmerie=[];$injury= [];
-        for ($i=0; $i < count($injuredPlayers); $i++) { 
-                if($injuredPlayers[$i]->team ==$team_abv){
-                        $injury['player']=$injuredPlayers[$i]->player;
-                        $injury['injury']=$injuredPlayers[$i]->injury;
-                        $injury['status']=$injuredPlayers[$i]->status;
-                        array_push($infirmerie,$injury);
-                }
+    /**
+     * Scrape (une fois, mis en cache) la table complète des blessures rotowire.
+     *
+     * injury() est appelé plusieurs fois par page de match (infirmerie + modèle de
+     * proba, domicile + extérieur). Sans cache, chaque appel re-scrapait toute la
+     * table team=ALL — d'où une saturation inutile. On met donc la table décodée
+     * en cache 10 min, partagée par tous les appels. En cas d'échec de la source,
+     * on renvoie [] (jamais d'exception) et on NE met PAS le vide en cache, pour
+     * réessayer rapidement.
+     *
+     * @return array<int,object>
+     */
+    private function injuryTable(): array
+    {
+        $fetch = static function (): array {
+            $curl = curl_init();
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://www.rotowire.com/basketball/tables/injury-report.php?team=ALL&pos=ALL',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_HTTPHEADER => array(),
+            ));
+            $response = curl_exec($curl);
+            $errno = curl_errno($curl);
+            $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            curl_close($curl);
+            if ($errno !== 0 || !is_string($response) || $httpCode < 200 || $httpCode >= 300) {
+                return [];
             }
-            return $infirmerie;
+            $decoded = json_decode($response);
+            return is_array($decoded) ? $decoded : [];
+        };
+
+        if ($this->cache === null) {
+            return $fetch();
         }
+
+        try {
+            $item = $this->cache->getItem('rotowire_injury_table');
+            if ($item->isHit()) {
+                $cached = $item->get();
+                return is_array($cached) ? $cached : [];
+            }
+            $table = $fetch();
+            if ($table !== []) {
+                $item->set($table);
+                $item->expiresAfter(600); // 10 min
+                $this->cache->save($item);
+            }
+            return $table;
+        } catch (\Throwable $e) {
+            return $fetch();
+        }
+    }
+
+    /**
+     * Blessés d'une équipe. Ne lève jamais d'exception : renvoie [] si la source
+     * est indisponible (l'appelant — infirmerie, modèle de proba — dégrade alors
+     * proprement sans bloquer la page).
+     *
+     * @return array<int,array{player:string,injury:string,status:string}>
+     */
+    public function injury($teamId)
+    {
+        $team_abv = $this->getAbvFromId($teamId);
+        $table = $this->injuryTable();
+        $infirmerie = [];
+        foreach ($table as $row) {
+            if (!is_object($row) || !isset($row->team) || $row->team !== $team_abv) {
+                continue;
+            }
+            $infirmerie[] = [
+                'player' => isset($row->player) ? (string) $row->player : '',
+                'injury' => isset($row->injury) ? (string) $row->injury : '',
+                'status' => isset($row->status) ? (string) $row->status : '',
+            ];
+        }
+
+        return $infirmerie;
+    }
 
     public function twitter($teamId){
         $team_abv=$this -> getAbvFromId($teamId);

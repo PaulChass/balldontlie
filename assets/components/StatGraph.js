@@ -11,38 +11,35 @@ function StatGraph(props) {
 	
 	
 	useEffect(() => {
-		
+
 		var graphUrl = 'https://balldontlie.fr/index.php/graph/' + props.graphParam[1] +'/' + props.graphParam[0] ;
 
-		const graphStats = fetch(graphUrl) //1
-		.then((response) => response.json()) //2
-		.then((graph) => {
-			setIsLoaded(true);
-			return graph
-			
-		});
-
-		
-		graphStats.then((a) => {
-			setOptions({
-				title: {
-				text: a.data.stat + ' - ' + a.data.title
-				},
-				data: [{				
+		// Le graphe est secondaire : en cas d'échec de l'API on ne plante pas et on
+		// ne laisse pas de données partielles — on log simplement et on n'affiche rien.
+		fetch(graphUrl)
+			.then((response) => {
+				if (!response.ok) throw new Error('HTTP ' + response.status);
+				return response.json();
+			})
+			.then((a) => {
+				if (!a || !a.data || !Array.isArray(a.data.label) || !Array.isArray(a.data.value)) {
+					throw new Error('données de graphe invalides');
+				}
+				setOptions({
+					title: {
+						text: a.data.stat + ' - ' + a.data.title
+					},
+					data: [{
 						type: "line",
-						dataPoints: [
-							{ label: a.data.label[0],  y: a.data.value[0] },
-							{ label: a.data.label[1],  y: a.data.value[1] },							
-							{ label: a.data.label[2],  y: a.data.value[2] },
-							{ label: a.data.label[3],  y: a.data.value[3] },
-							{ label: a.data.label[4],  y: a.data.value[4] }
-						]
-				}]
+						dataPoints: a.data.label.map((label, i) => ({ label, y: a.data.value[i] })),
+					}]
+				});
+				setIsLoaded(true);
+				const el = document.getElementById('playerGraph');
+				if (el) el.style.display = "block";
 			})
-
-			})
-			document.getElementById('playerGraph').style.display = "block";			
-		}, [props])
+			.catch((error) => console.error('Error fetching graph:', error));
+	}, [props])
 		
 		function hide()
 		{
