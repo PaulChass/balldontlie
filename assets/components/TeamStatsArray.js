@@ -136,13 +136,14 @@ function TeamsStatsArrays(props) {
       homeName[1] +
       "/" +
       awayName[1];
+    // Cotes bookmaker (optionnel, scraping externe) : un échec ne doit pas casser
+    // le Face-à-Face. On dégrade proprement (pas de cote affichée) via WinProbability.
     const simulate = fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        return data;
-      });
+      .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
+      .then((data) => data);
 
     simulate.then((d) => {
+      if (!d || !d.data) { setSimulationIsLoading(false); return; }
       setSimulated(d.data);
       if (home == 0) {
         let o = parseInt(d.data.hOdds * 100) / 100;
@@ -153,7 +154,7 @@ function TeamsStatsArrays(props) {
         setOdd(o);
         setSimulationIsLoading(false);
       }
-    });
+    }).catch(() => setSimulationIsLoading(false));
   }, [homeTeam, awayTeam, home]);
 
 
@@ -422,14 +423,14 @@ function TeamsStatsArrays(props) {
         measureType;
       setHomeIsLoading(true);
       const hteamStats = fetch(homeUrl) //1
-        .then((response) => response.json()) //2
+        .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); }) //2
         .then((team) => {
           setHomeIsLoading(false);
           return team; //3
         });
         setAwayIsLoading(true);
       const ateamStats = fetch(awayUrl) //1
-        .then((response) => response.json()) //2
+        .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); }) //2
         .then((team) => {
           setAwayIsLoading(false);
           return team; //3
@@ -437,6 +438,7 @@ function TeamsStatsArrays(props) {
 
       const getTeamsStats = () => {
         hteamStats.then((h) => {
+          if (!h || !h.data) { setHomeIsLoading(false); return; }
           if(measureType=='Base'){
           setHTeamPoints(h.data.points);
           setHPointsTaken(h.data.pointsTaken);
@@ -484,9 +486,10 @@ function TeamsStatsArrays(props) {
             setHDREB_PCT(h.data.DREB_PCT);
             props.setHTeamName(h.data.Team);
           }
-        });
+        }).catch(() => setHomeIsLoading(false));
 
         ateamStats.then((a) => {
+          if (!a || !a.data) { setAwayIsLoading(false); return; }
           if(measureType=='Base'){
           setATeamPoints(a.data.points);
           setAPointsTaken(a.data.pointsTaken);
@@ -534,7 +537,7 @@ function TeamsStatsArrays(props) {
             setADREB_PCT(a.data.DREB_PCT);
             props.setATeamName(a.data.Team);
           }
-        });
+        }).catch(() => setAwayIsLoading(false));
       };
       getTeamsStats();
     }

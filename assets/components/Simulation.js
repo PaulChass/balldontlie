@@ -5,10 +5,9 @@ import { useState, useEffect } from 'react';
 function Simulation(props) {
         const [simulated,setSimulated] = useState(0);
         
-		useEffect(() => {	
+		useEffect(() => {
 			if(props.hTeamName !== 0){
-				console.log(props.hTeamName);
-				const exceptions = ['Angeles','Antonio','Trail','State','Orleans','York'];	
+				const exceptions = ['Angeles','Antonio','Trail','State','Orleans','York'];
 				
 				const homeTeam = props.hTeamName.split(' ');
 				let hName = homeTeam[1];
@@ -23,15 +22,16 @@ function Simulation(props) {
 				if(aName=="Timberwolves"){aName = "TWolves"}
 				const url = "https://balldontlie.fr/index.php/simulation/"+hName+'/'+aName
 
-				const simulate = fetch(url)
-				.then((response) => response.json()) 
-				.then((data) => {
-				return data 
-				}); 
-
-				simulate.then((d) => { 
-					setSimulated(d.data);
+				// Cotes bookmaker (optionnel) : un échec ne doit pas casser l'affichage.
+				fetch(url)
+				.then((response) => {
+					if (!response.ok) throw new Error('HTTP ' + response.status);
+					return response.json();
 				})
+				.then((d) => {
+					setSimulated(d && d.data ? d.data : 0);
+				})
+				.catch((error) => console.error('Error fetching simulation:', error));
 			}
 		},[props.teams])
 	  const x = simulated.hOdds;
