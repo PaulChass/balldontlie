@@ -5,20 +5,20 @@ function LastNightGames()
     const [games, setGames] = useState([]);
 
   useEffect(() => {
-    let url = '/index.php/lastnightgames';
-    fetch(url) // Replace with the correct API endpoint URL
-      .then((response) => response.json())
-      .then((data) => setGames(data.data))
-      .catch((error) => console.error("Error fetching data:", error));
-    const intervalId = setInterval(() => {
+    const url = '/index.php/lastnightgames';
+    // Les résultats de la nuit ne bougent pas : on garde l'écran existant si un
+    // appel échoue (non bloquant), et on rafraîchit lentement pour ne pas saturer.
+    const load = () =>
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        })
+        .then((data) => setGames(data && Array.isArray(data.data) ? data.data : []))
+        .catch((error) => console.error('Error fetching data:', error));
 
-    let url = '/index.php/lastnightgames';
-    fetch(url) // Replace with the correct API endpoint URL
-      .then((response) => response.json())
-      .then((data) => setGames(data.data))
-      .catch((error) => console.error("Error fetching data:", error));
-    
-    }, 10000);
+    load();
+    const intervalId = setInterval(load, 300000); // 5 min
     // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
   }, []);

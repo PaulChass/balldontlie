@@ -9,27 +9,25 @@ const Comments = (props) => {
 
   useEffect(() => {
     setIsLoading(true);
-    let url = '/index.php/comments/'+props.gameId;
-    fetch(url) // Replace with the correct API endpoint URL
-      .then((response) => response.json())
-      .then((data) => setComments(data))
-      .then(()=>setIsLoading(false))
-      .catch((error) => console.error("Error fetching data:", error));
-    const intervalId = setInterval(() => {
-        let url = '/index.php/comments/'+props.gameId;
-    fetch(url) // Replace with the correct API endpoint URL
-      .then((response) => response.json())
-      .then((data) => setComments(data))
-      .then(()=>setIsLoading(false))
-      .catch((error) => console.error("Error fetching data:", error));
-    }, 3000);
+    const url = '/index.php/comments/' + props.gameId;
+    // Un échec de chargement ne doit pas bloquer la page : on garde les
+    // commentaires déjà affichés et on réessaie au prochain cycle (lent, pour
+    // ne pas saturer le serveur).
+    const load = () =>
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        })
+        .then((data) => setComments(Array.isArray(data) ? data : []))
+        .catch((error) => console.error('Error fetching data:', error))
+        .finally(() => setIsLoading(false));
+
+    load();
+    const intervalId = setInterval(load, 20000); // 20 s
     // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
   }, [props.gameId]);
-
-  
-  console.log(isLoading);
-
 
 
   const handleCommentSubmit = (comment) => {

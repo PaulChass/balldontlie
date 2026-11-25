@@ -1,69 +1,108 @@
-import propTypes from 'prop-types';
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
-
+/**
+ * Infirmerie d'un match (blessés des deux équipes). L'appel API peut échouer :
+ * on ne laisse jamais la zone vide sans explication — un état de chargement, un
+ * message d'erreur, et un « aucun blessé signalé » quand la liste est vide. Une
+ * panne de la source ne bloque pas le reste de la page.
+ */
 function Injuries(props) {
-  const [hInjured,setHInjured] = useState(0);
-  const [aInjured,setAInjured] = useState(0);
+  const [home, setHome] = useState(null);
+  const [away, setAway] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const homeId = props.teams && props.teams[0];
+  const awayId = props.teams && props.teams[1];
 
   useEffect(() => {
-    if(props.teams[0] !== 0){
-    const hInjuryUrl = "https://balldontlie.fr/index.php/injuries/"+props.teams[0];
-    const aInjuryUrl = "https://balldontlie.fr/index.php/injuries/"+props.teams[1];
-   
-    
-    const hinjuries = fetch(hInjuryUrl) //1
-    .then((response) => response.json()) //2
-    .then((data) => {
-      return data //3
-    });
-    const ainjuries = fetch(aInjuryUrl) //1
-    .then((response) => response.json()) //2
-    .then((data) => {
-      return data //3
-    });
-    const getInjuries = () => {
-        hinjuries.then((h) => { setHInjured(h.data)})
-        ainjuries.then((a) => { setAInjured(a.data) })
-    }
+    if (!homeId || homeId === 0) return;
+    let alive = true;
+    setLoading(true);
+    setError('');
+    setHome(null);
+    setAway(null);
 
-    getInjuries();}
-    
-   },props.teams)
-  
+    const fetchTeam = (teamId) =>
+      fetch('https://balldontlie.fr/index.php/injuries/' + teamId)
+        .then((r) => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then((d) => (d && Array.isArray(d.data) ? d.data : []));
 
-   function showInjuries(injured,teamName)
-  {
-    return (<div className='col-6 my-0'><table className="table table-dark">
-      <caption style={{ captionSide: 'top', color: 'white', textAlign: 'center' }}>{teamName}</caption>
-      <thead>
-        <tr>
-          <th scope='col'>Nom</th>
-          <th scope='col'>Blessure</th>
-          <th scope='col'>Statut</th>
-        </tr>
-      </thead>
+    Promise.all([fetchTeam(homeId), fetchTeam(awayId)])
+      .then(([h, a]) => {
+        if (!alive) return;
+        setHome(h);
+        setAway(a);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setError("Infirmerie indisponible pour le moment.");
+        setLoading(false);
+      });
 
-      <tbody>
-      {injured.map((injuredPlayer) => <tr key={injuredPlayer.player}>
-        <td>{injuredPlayer.player}</td>
-        <td>{injuredPlayer.injury}</td>
-        <td>{injuredPlayer.status}</td>
+    return () => {
+      alive = false;
+    };
+  }, [homeId, awayId]);
 
-        </tr>)}
-      </tbody>
-    </table></div>)
-    
-
+  function showInjuries(injured, teamName) {
+    return (
+      <div className="col-6 my-0">
+        <table className="table table-dark">
+          <caption style={{ captionSide: 'top', color: 'white', textAlign: 'center' }}>{teamName}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Nom</th>
+              <th scope="col">Blessure</th>
+              <th scope="col">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {injured.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center">
+                  <em>Aucun blessé signalé</em>
+                </td>
+              </tr>
+            )}
+            {injured.map((injuredPlayer) => (
+              <tr key={injuredPlayer.player}>
+                <td>{injuredPlayer.player}</td>
+                <td>{injuredPlayer.injury}</td>
+                <td>{injuredPlayer.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
-  return (<div><h1 className='text-white fs-2 text-center p-3 m-3'>Infirmerie (source espn)</h1><div className='d-flex '> 
-    { hInjured !== 0 ? showInjuries(hInjured,props.hTeamName): null}
-    { aInjured !== 0 ? showInjuries(aInjured,props.aTeamName): null}
-  </div></div>)
-
-
+  return (
+    <div>
+      <h1 className="text-white fs-2 text-center p-3 m-3">Infirmerie (source rotowire)</h1>
+      {loading && (
+        <div className="text-white text-center">
+          <em>Chargement de l'infirmerie…</em>
+        </div>
+      )}
+      {error && (
+        <div className="text-white text-center">
+          <em>{error}</em>
+        </div>
+      )}
+      {!loading && !error && (
+        <div className="d-flex">
+          {home !== null && showInjuries(home, props.hTeamName)}
+          {away !== null && showInjuries(away, props.aTeamName)}
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default Injuries
+export default Injuries;
